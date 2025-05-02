@@ -60,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
 <head>
     <link rel="stylesheet" href="asset/styles.css">
     <meta charset="UTF-8">
+    <title>Login administracion de insumos del Hospital Clinico Félix Bulnes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <div class="header">
         <img src="asset/logo.png" alt="Logo">

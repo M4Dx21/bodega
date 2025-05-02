@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Administracion de insumos del Hospital Clinico Félix Bulnes</title>
     <link rel="stylesheet" href="asset/styles.css">
 </head>
 <body class="index-page">
