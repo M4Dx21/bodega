@@ -26,7 +26,7 @@ $enum_ubicaciones = obtenerValoresEnum($conn, 'componentes', 'ubicacion');
 if (isset($_POST['agregar'])) {
     $nombre = $_POST["insumo"];
     $codigo = $_POST["codigo"];
-    $cantidad = $_POST["stock"];
+    $stock = $_POST["stock"];
     $especialidad = $_POST["especialidad"];
     $formato = $_POST["formato"];
     $ubicacion = $_POST["ubicacion"];
@@ -34,7 +34,7 @@ if (isset($_POST['agregar'])) {
     $fecha_ingreso = date('Y-m-d H:i:s');
 
     $insert = "INSERT INTO componentes (codigo, insumo, stock, especialidad, formato, ubicacion, fecha_ingreso) 
-               VALUES ('$codigo', '$nombre', '$cantidad', '$especialidad', '$formato', '$ubicacion', '$fecha_ingreso')";
+               VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$ubicacion', '$fecha_ingreso')";
     mysqli_query($conn, $insert);
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
@@ -55,13 +55,14 @@ if (isset($_GET['editar'])) {
 }
 
 if (isset($_POST['guardar_cambios'])) {
+    $id = $_POST["id"];
     $nombre = $_POST["insumo"];
     $codigo = $_POST["codigo"];
     $cantidad = $_POST["stock"];
     $especialidad = $_POST["especialidad"];
     $formato = $_POST["formato"];
     $ubicacion = $_POST["ubicacion"];
-    $fecha_ingreso = $_POST["fecha_ingreso"];
+    $fecha_ingreso = date('Y-m-d H:i:s');
 
     $update = "UPDATE componentes SET 
                 codigo = '$codigo',
@@ -70,8 +71,7 @@ if (isset($_POST['guardar_cambios'])) {
                 especialidad = '$especialidad',
                 formato = '$formato',
                 ubicacion = '$ubicacion',
-                fecha_ingreso = '$fecha_ingreso',
-
+                fecha_ingreso = '$fecha_ingreso'
                WHERE id = $id";
     mysqli_query($conn, $update);
     header("Location: " . $_SERVER['PHP_SELF']);
@@ -148,7 +148,7 @@ if ($result->num_rows > 0) {
                         </option>
                     <?php endforeach; ?>
                 </select>
-            <input type="number" name="cantidad" placeholder="Cantidad" required
+            <input type="number" name="stock" placeholder="Cantidad" required
                 value="<?= $editando ? $componente_edit['stock'] : '' ?>">
             <?php if ($editando): ?>
                 <button type="submit" name="guardar_cambios">Guardar Cambios</button>

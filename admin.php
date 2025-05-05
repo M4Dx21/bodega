@@ -202,9 +202,6 @@ if ($result3->num_rows > 0) {
             <input type="email" name="correo" placeholder="Correo" required id="correo">
             <button type="submit" name="ingresar">Registrar Usuario</button>
         </form>
-        <form action="agregarcaja.php" method="post">
-            <button type="submit">Agregar Caja</button>
-        </form>
         <form action="agregarcomp.php" method="post">
             <button type="submit">Agregar Insumos</button>
         </form>

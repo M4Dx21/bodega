@@ -31,9 +31,6 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 </head>
 <body>
     <div class="container">
-        <form action="agregarcaja.php" method="post">
-            <button type="submit">Agregar Caja</button>
-        </form>
         <form action="agregarcomp.php" method="post">
             <button type="submit">Agregar Insumos</button>
         </form>
