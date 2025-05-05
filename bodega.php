@@ -2,10 +2,6 @@
 session_start();
 include 'db.php';
 
-$consulta_estados = "SELECT estado FROM componentes";
-$resultado_estados = mysqli_query($conn, $consulta_estados);
-$estados = mysqli_fetch_all($resultado_estados, MYSQLI_ASSOC);
-
 $consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC";
 $resultado = mysqli_query($conn, $consulta);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
@@ -47,11 +43,8 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
             <tr>
                 <th>ID</th>
                 <th>Código</th>
-                <th>Nombre</th>
-                <th>Número de Serie</th>
-                <th>Cantidad</th>
-                <th>Estado</th>
-                <th>Lote</th>
+                <th>Insumo</th>
+                <th>Stock</th>
                 <th>Fecha</th>
                 <th>Acciones</th>
             </tr>
@@ -59,11 +52,8 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                 <tr>
                     <td><?= $componente['id'] ?></td>
                     <td><?= htmlspecialchars($componente['codigo']) ?></td>
-                    <td><?= htmlspecialchars($componente['nombre']) ?></td>
-                    <td><?= htmlspecialchars($componente['num_serie']) ?></td>
-                    <td><?= htmlspecialchars($componente['cantidad']) ?></td>
-                    <td><?= htmlspecialchars($componente['estado']) ?></td>
-                    <td><?= htmlspecialchars($componente['lote']) ?></td>
+                    <td><?= htmlspecialchars($componente['insumo']) ?></td>
+                    <td><?= htmlspecialchars($componente['stock']) ?></td>
                     <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
                     <td>
                         <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>

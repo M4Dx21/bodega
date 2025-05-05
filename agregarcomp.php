@@ -4,26 +4,37 @@ session_start();
 $editando = false;
 $componente_edit = null;
 
-$consulta_estados = "SELECT estado FROM componentes";
-$resultado_estados = mysqli_query($conn, $consulta_estados);
-$estados = mysqli_fetch_all($resultado_estados, MYSQLI_ASSOC);
-
 $consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC";
 $resultado = mysqli_query($conn, $consulta);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
+function obtenerValoresEnum($conn, $tabla, $columna) {
+    $query = "SHOW COLUMNS FROM $tabla LIKE '$columna'";
+    $resultado = mysqli_query($conn, $query);
+    $fila = mysqli_fetch_assoc($resultado);
+    
+    if (preg_match("/^enum\(\'(.*)\'\)$/", $fila['Type'], $matches)) {
+        $valores = explode("','", $matches[1]);
+        return $valores;
+    }
+    return [];
+}
+$enum_especialidades = obtenerValoresEnum($conn, 'componentes', 'especialidad');
+$enum_formatos = obtenerValoresEnum($conn, 'componentes', 'formato');
+$enum_ubicaciones = obtenerValoresEnum($conn, 'componentes', 'ubicacion');
+
 if (isset($_POST['agregar'])) {
-    $nombre = $_POST["nombre"];
+    $nombre = $_POST["insumo"];
     $codigo = $_POST["codigo"];
-    $cantidad = $_POST["cantidad"];
-    $estado = $_POST["estado"];
-    $lote = $_POST["lote"];
-    $num_serie = $_POST["num_serie"];
+    $cantidad = $_POST["stock"];
+    $especialidad = $_POST["especialidad"];
+    $formato = $_POST["formato"];
+    $ubicacion = $_POST["ubicacion"];
 
     $fecha_ingreso = date('Y-m-d H:i:s');
 
-    $insert = "INSERT INTO componentes (codigo, nombre, cantidad, estado, lote, fecha_ingreso, num_serie) 
-               VALUES ('$codigo', '$nombre', '$cantidad', '$estado', '$lote', '$fecha_ingreso', '$num_serie')";
+    $insert = "INSERT INTO componentes (codigo, insumo, stock, especialidad, formato, ubicacion, fecha_ingreso) 
+               VALUES ('$codigo', '$nombre', '$cantidad', '$especialidad', '$formato', '$ubicacion', '$fecha_ingreso')";
     mysqli_query($conn, $insert);
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
@@ -44,23 +55,23 @@ if (isset($_GET['editar'])) {
 }
 
 if (isset($_POST['guardar_cambios'])) {
-    $id = $_POST["id"];
-    $nombre = $_POST["nombre"];
+    $nombre = $_POST["insumo"];
     $codigo = $_POST["codigo"];
-    $cantidad = $_POST["cantidad"];
-    $estado = $_POST["estado"];
-    $lote = $_POST["lote"];
-    $num_serie = $_POST["num_serie"];
+    $cantidad = $_POST["stock"];
+    $especialidad = $_POST["especialidad"];
+    $formato = $_POST["formato"];
+    $ubicacion = $_POST["ubicacion"];
     $fecha_ingreso = $_POST["fecha_ingreso"];
 
     $update = "UPDATE componentes SET 
                 codigo = '$codigo',
-                nombre = '$nombre',
-                cantidad = '$cantidad',
-                estado = '$estado',
-                lote = '$lote',
+                insumo = '$nombre',
+                stock = '$cantidad',
+                especialidad = '$especialidad',
+                formato = '$formato',
+                ubicacion = '$ubicacion',
                 fecha_ingreso = '$fecha_ingreso',
-                num_serie = '$num_serie'
+
                WHERE id = $id";
     mysqli_query($conn, $update);
     header("Location: " . $_SERVER['PHP_SELF']);
@@ -109,22 +120,36 @@ if ($result->num_rows > 0) {
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
             <?php endif; ?>
-            <input type="text" name="nombre" placeholder="Nombre del componente" required
-                value="<?= $editando ? $componente_edit['nombre'] : '' ?>">
-            <input type="text" name="num_serie" placeholder="Número de Serie" required
-                value="<?= $editando ? $componente_edit['num_serie'] : '' ?>"> <!-- Nuevo campo -->
-            <input type="text" name="codigo" placeholder="Código" required
+            <input type="text" name="insumo" placeholder="Insumo" required
+                value="<?= $editando ? $componente_edit['insumo'] : '' ?>">
+            <input type="text" name="codigo" placeholder="Código Ad" required
                 value="<?= $editando ? $componente_edit['codigo'] : '' ?>">
+                <select name="especialidad" required>
+                    <option value="">Seleccione especialidad</option>
+                    <?php foreach ($enum_especialidades as $valor): ?>
+                        <option value="<?= $valor ?>" <?= $editando && $componente_edit['especialidad'] == $valor ? 'selected' : '' ?>>
+                            <?= htmlspecialchars(ucfirst($valor)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="formato" required>
+                    <option value="">Seleccione formato</option>
+                    <?php foreach ($enum_formatos as $valor): ?>
+                        <option value="<?= $valor ?>" <?= $editando && $componente_edit['formato'] == $valor ? 'selected' : '' ?>>
+                            <?= htmlspecialchars(ucfirst($valor)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="ubicacion" required>
+                    <option value="">Seleccione ubicación</option>
+                    <?php foreach ($enum_ubicaciones as $valor): ?>
+                        <option value="<?= $valor ?>" <?= $editando && $componente_edit['ubicacion'] == $valor ? 'selected' : '' ?>>
+                            <?= htmlspecialchars(ucfirst($valor)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             <input type="number" name="cantidad" placeholder="Cantidad" required
-                value="<?= $editando ? $componente_edit['cantidad'] : '' ?>">
-            <select name="estado" required>
-                <option value="bueno" <?= $editando && $componente_edit['estado'] == 'bueno' ? 'selected' : '' ?>>Bueno</option>
-                <option value="malo" <?= $editando && $componente_edit['estado'] == 'malo' ? 'selected' : '' ?>>Malo</option>
-                <option value="de baja" <?= $editando && $componente_edit['estado'] == 'de baja' ? 'selected' : '' ?>>De Baja</option>
-            </select>
-            <input type="text" name="lote" placeholder="Lote" required
-                value="<?= $editando ? $componente_edit['lote'] : '' ?>">
-
+                value="<?= $editando ? $componente_edit['stock'] : '' ?>">
             <?php if ($editando): ?>
                 <button type="submit" name="guardar_cambios">Guardar Cambios</button>
                 <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
@@ -139,10 +164,10 @@ if ($result->num_rows > 0) {
                 <th>ID</th>
                 <th>Código</th>
                 <th>Nombre</th>
-                <th>Número de Serie</th>
-                <th>Cantidad</th>
-                <th>Estado</th>
-                <th>Lote</th>
+                <th>Stock</th>
+                <th>Especialidad</th>
+                <th>Formato</th>
+                <th>Ubicacion</th>
                 <th>Fecha</th>
                 <th>Acciones</th>
             </tr>
@@ -150,11 +175,11 @@ if ($result->num_rows > 0) {
                 <tr>
                     <td><?= $componente['id'] ?></td>
                     <td><?= htmlspecialchars($componente['codigo']) ?></td>
-                    <td><?= htmlspecialchars($componente['nombre']) ?></td>
-                    <td><?= htmlspecialchars($componente['num_serie']) ?></td>
-                    <td><?= htmlspecialchars($componente['cantidad']) ?></td>
-                    <td><?= htmlspecialchars($componente['estado']) ?></td>
-                    <td><?= htmlspecialchars($componente['lote']) ?></td>
+                    <td><?= htmlspecialchars($componente['insumo']) ?></td>
+                    <td><?= htmlspecialchars($componente['stock']) ?></td>
+                    <td><?= htmlspecialchars($componente['especialidad']) ?></td>
+                    <td><?= htmlspecialchars($componente['formato']) ?></td>
+                    <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
                     <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
                     <td>
                         <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>
