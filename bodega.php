@@ -5,6 +5,51 @@ include 'db.php';
 $consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC";
 $resultado = mysqli_query($conn, $consulta);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+$nombre_usuario_filtro = '';
+$resolucion_filtro = '';
+
+if (isset($_POST['limpiar_filtros'])) {
+    $resolucion_filtro = '';
+    $nombre_usuario_filtro = '';
+    header("Location: ".$_SERVER['PHP_SELF']);
+    exit();
+}
+
+if (isset($_GET['query'])) {
+    $query = $conn->real_escape_string($_GET['query']);
+
+    $sql = "SELECT codigo, insumo FROM componentes 
+            WHERE codigo LIKE '%$query%' OR insumo LIKE '%$query%' 
+            LIMIT 10";
+
+    $result = $conn->query($sql);
+
+    $suggestions = [];
+    while ($row = $result->fetch_assoc()) {
+        $suggestions[] = $row['codigo'] . " - " . $row['insumo'];
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode($suggestions);
+    exit();
+}
+
+
+$sql_check = "SELECT id, codigo, especialidad, insumo, formato, stock, ubicacion, fecha_ingreso FROM componentes WHERE 1";
+
+if ($resolucion_filtro) {
+    $sql_check .= " AND estado = '$resolucion_filtro'";
+}
+
+if ($nombre_usuario_filtro) {
+    $nombre_usuario_filtro = $conn->real_escape_string($nombre_usuario_filtro);
+    $sql_check .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
+}
+
+$sql_check .= " ORDER BY fecha_ingreso DESC";
+$resultado = mysqli_query($conn, $sql_check);
+$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+
 
 ?>
 <!DOCTYPE html>
@@ -31,6 +76,21 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 </head>
 <body>
     <div class="container">
+        <div class="filters">
+            <form method="POST" action="">
+                <label for="codigo">Insumo:</label>
+                <div class="input-sugerencias-wrapper">
+                    <input type="text" id="codigo" name="codigo" autocomplete="off"
+                        placeholder="Escribe el insumo para buscar..."
+                        value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
+                    <div id="sugerencias" class="sugerencias-box"></div>
+                </div>
+                <div class="botones-filtros">
+                    <button type="submit">Filtrar</button>
+                    <button type="submit" name="limpiar_filtros" class="limpiar-filtros-btn">Limpiar Filtros</button>
+                </div>
+            </form>
+        </div>
         <form action="agregarcomp.php" method="post">
             <button type="submit">Agregar Insumos</button>
         </form>
@@ -57,6 +117,9 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                 </tr>
             <?php endforeach; ?>
             </table>
+        <?php endif; ?>
+        <?php if (empty($personas_dentro)): ?>
+            <p>No se encontraron resultados para tu búsqueda.</p>
         <?php endif; ?>
     </div>
 
@@ -86,11 +149,53 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                 }, 70);
             }
         };
+        document.addEventListener("DOMContentLoaded", function() {
+            const input = document.getElementById("codigo");
+            const sugerenciasBox = document.getElementById("sugerencias");
 
-    function toggleAccountInfo() {
-        const info = document.getElementById('accountInfo');
-        info.style.display = info.style.display === 'none' ? 'block' : 'none';
-    }
+            input.addEventListener("input", function() {
+                const query = input.value;
+
+                if (query.length < 2) {
+                    sugerenciasBox.innerHTML = "";
+                    sugerenciasBox.style.display = "none";
+                    return;
+                }
+
+                fetch(`bodega.php?query=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        sugerenciasBox.innerHTML = "";
+                        if (data.length === 0) {
+                            sugerenciasBox.style.display = "none";
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            const div = document.createElement("div");
+                            div.textContent = item;
+                            div.addEventListener("click", () => {
+                                input.value = item.split(" - ")[0]; // Solo deja el código
+                                sugerenciasBox.innerHTML = "";
+                                sugerenciasBox.style.display = "none";
+                            });
+                            sugerenciasBox.appendChild(div);
+                        });
+                        sugerenciasBox.style.display = "block";
+                    });
+            });
+
+            // Ocultar si se hace clic fuera
+            document.addEventListener("click", function(e) {
+                if (!sugerenciasBox.contains(e.target) && e.target !== input) {
+                    sugerenciasBox.style.display = "none";
+                }
+            });
+        });
+        function toggleAccountInfo() {
+            const info = document.getElementById('accountInfo');
+            info.style.display = info.style.display === 'none' ? 'block' : 'none';
+        }
     </script>
 </body>
 </html>
