@@ -2,62 +2,55 @@
 session_start();
 include 'db.php';
 
-$consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC";
-$resultado = mysqli_query($conn, $consulta);
-$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
-$nombre_usuario_filtro = '';
-$resolucion_filtro = '';
+// Filtros desde GET
+$nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 
-if (isset($_POST['limpiar_filtros'])) {
-    $resolucion_filtro = '';
-    $nombre_usuario_filtro = '';
-    header("Location: ".$_SERVER['PHP_SELF']);
-    exit();
+// Paginación
+$cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
+$cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
+$pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+$offset = ($pagina_actual - 1) * $cantidad_por_pagina;
+
+// Consulta base con filtros
+$sql_base = "FROM componentes WHERE 1";
+
+if (!empty($nombre_usuario_filtro)) {
+    $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
 }
 
+// Consulta total para paginación
+$sql_total = "SELECT COUNT(*) as total " . $sql_base;
+$total_resultado = mysqli_query($conn, $sql_total);
+$total_filas = mysqli_fetch_assoc($total_resultado)['total'];
+$total_paginas = ceil($total_filas / $cantidad_por_pagina);
+
+// Consulta final con paginación
+$sql_final = "SELECT * " . $sql_base . " ORDER BY fecha_ingreso DESC LIMIT $cantidad_por_pagina OFFSET $offset";
+$resultado = mysqli_query($conn, $sql_final);
+$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+
+// Autocompletado
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
-
     $sql = "SELECT codigo, insumo FROM componentes 
             WHERE codigo LIKE '%$query%' OR insumo LIKE '%$query%' 
             LIMIT 10";
-
     $result = $conn->query($sql);
-
     $suggestions = [];
     while ($row = $result->fetch_assoc()) {
         $suggestions[] = $row['codigo'] . " - " . $row['insumo'];
     }
-
     header('Content-Type: application/json');
     echo json_encode($suggestions);
     exit();
 }
-
-
-$sql_check = "SELECT id, codigo, especialidad, insumo, formato, stock, ubicacion, fecha_ingreso FROM componentes WHERE 1";
-
-if ($resolucion_filtro) {
-    $sql_check .= " AND estado = '$resolucion_filtro'";
-}
-
-if ($nombre_usuario_filtro) {
-    $nombre_usuario_filtro = $conn->real_escape_string($nombre_usuario_filtro);
-    $sql_check .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
-}
-
-$sql_check .= " ORDER BY fecha_ingreso DESC";
-$resultado = mysqli_query($conn, $sql_check);
-$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
-
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="stylesheet" href="asset/styles.css">
     <meta charset="UTF-8">
-    <title>Administracion de insumos del Hospital Clinico Félix Bulnes</title>
+    <title>Administración de Insumos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
@@ -77,7 +70,7 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 <body>
     <div class="container">
         <div class="filters">
-            <form method="POST" action="">
+            <form method="GET" action="">
                 <label for="codigo">Insumo:</label>
                 <div class="input-sugerencias-wrapper">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
@@ -87,7 +80,7 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                 </div>
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="submit" name="limpiar_filtros" class="limpiar-filtros-btn">Limpiar Filtros</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
                 </div>
             </form>
         </div>
@@ -117,38 +110,30 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                 </tr>
             <?php endforeach; ?>
             </table>
-        <?php endif; ?>
-        <?php if (empty($personas_dentro)): ?>
+            <form method="GET" style="margin-bottom: 10px;">
+                <label for="cantidad">Mostrar:</label>
+                <select name="cantidad" onchange="this.form.submit()">
+                    <?php foreach ([10, 20, 30, 40, 50] as $cantidad): ?>
+                        <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <input type="hidden" name="codigo" value="<?= htmlspecialchars($nombre_usuario_filtro) ?>">
+                <input type="hidden" name="pagina" value="1">
+            </form>
+            <div style="margin-top: 10px;">
+                <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
+                    <a href="?pagina=<?= $i ?>&cantidad=<?= $cantidad_por_pagina ?>&codigo=<?= urlencode($nombre_usuario_filtro) ?>"
+                    style="margin-right: 5px; <?= $pagina_actual == $i ? 'font-weight: bold;' : '' ?>">
+                    <?= $i ?>
+                    </a>
+                <?php endfor; ?>
+            </div>
+        <?php else: ?>
             <p>No se encontraron resultados para tu búsqueda.</p>
         <?php endif; ?>
     </div>
 
     <script>
-
-        window.onload = function() {
-            const successMsg = document.getElementById("success-msg");
-            const errorMsg = document.getElementById("error-rut");
-
-            if (successMsg) {
-                successMsg.style.display = 'flex';
-                setTimeout(function() {
-                    successMsg.style.opacity = 1;
-                    setTimeout(function() {
-                        successMsg.style.display = 'none';
-                    }, 3000);
-                }, 70);
-            }
-
-            if (errorMsg) {
-                errorMsg.style.display = 'flex';
-                setTimeout(function() {
-                    errorMsg.style.opacity = 1;
-                    setTimeout(function() {
-                        errorMsg.style.display = 'none';
-                    }, 3000);
-                }, 70);
-            }
-        };
         document.addEventListener("DOMContentLoaded", function() {
             const input = document.getElementById("codigo");
             const sugerenciasBox = document.getElementById("sugerencias");
@@ -185,13 +170,13 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                     });
             });
 
-            // Ocultar si se hace clic fuera
             document.addEventListener("click", function(e) {
                 if (!sugerenciasBox.contains(e.target) && e.target !== input) {
                     sugerenciasBox.style.display = "none";
                 }
             });
         });
+
         function toggleAccountInfo() {
             const info = document.getElementById('accountInfo');
             info.style.display = info.style.display === 'none' ? 'block' : 'none';

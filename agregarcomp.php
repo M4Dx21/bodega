@@ -1,12 +1,20 @@
 <?php
 include 'db.php';
 session_start();
+
 $editando = false;
 $componente_edit = null;
+$cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
+$cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
+$pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+$offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-$consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC";
+$consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC LIMIT $cantidad_por_pagina OFFSET $offset";
 $resultado = mysqli_query($conn, $consulta);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+$total_resultado = mysqli_query($conn, "SELECT COUNT(*) AS total FROM componentes");
+$total_filas = mysqli_fetch_assoc($total_resultado)['total'];
+$total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
 function obtenerValoresEnum($conn, $tabla, $columna) {
     $query = "SHOW COLUMNS FROM $tabla LIKE '$columna'";
@@ -109,6 +117,7 @@ if ($result->num_rows > 0) {
             </form>
         </div>
     </div>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
     <div class="container">
@@ -116,11 +125,22 @@ if ($result->num_rows > 0) {
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
         <h2><?= $editando ? 'Editar Componente' : 'Agregar Componente' ?></h2>
-        <form action="importar_excel.php" method="post" enctype="multipart/form-data">
-            <label for="archivo_excel">Subir Excel:</label>
-            <input type="file" name="archivo_excel" accept=".xlsx, .xls">
-            <button type="submit">Importar</button>
-        </form>
+        <button type="button" onclick="toggleExcelForm()">📂 Importar desde Excel</button>
+
+        <div id="excelFormContainer" style="display: none; margin-top: 10px;">
+            <form action="importar_excel.php" method="post" enctype="multipart/form-data">
+                <label for="archivo_excel">Subir Excel:</label>
+                <input type="file" name="archivo_excel" accept=".xlsx, .xls">
+                <button type="submit">Importar</button>
+                <button type="button" onclick="toggleExcelForm()">Cancelar</button>
+            </form>
+        </div>
+        <button type="button" onclick="abrirEscaner()">📷 Escanear Código</button>
+        <div id="escaneo-container" style="display:none;">
+            <div id="lector" style="width: 100%; max-width: 400px; margin: 10px auto;"></div>
+            <button type="button" onclick="cerrarEscaner()">❌ Finalizar Escaneo</button>
+        </div>
+
         <form action="" method="post">
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
@@ -166,7 +186,6 @@ if ($result->num_rows > 0) {
             <h2>Lista de Componentes</h2>
             <table>
             <tr>
-                <th>ID</th>
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Stock</th>
@@ -178,7 +197,6 @@ if ($result->num_rows > 0) {
             </tr>
             <?php foreach ($personas_dentro as $componente): ?>
                 <tr>
-                    <td><?= $componente['id'] ?></td>
                     <td><?= htmlspecialchars($componente['codigo']) ?></td>
                     <td><?= htmlspecialchars($componente['insumo']) ?></td>
                     <td><?= htmlspecialchars($componente['stock']) ?></td>
@@ -193,6 +211,45 @@ if ($result->num_rows > 0) {
                 </tr>
             <?php endforeach; ?>
             </table>
+            <form method="GET" style="margin-bottom: 10px;">
+                <label for="cantidad">Mostrar:</label>
+                <select name="cantidad" onchange="this.form.submit()">
+                    <?php foreach ([10, 20, 30, 40, 50] as $cantidad): ?>
+                        <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <input type="hidden" name="pagina" value="1">
+            </form>
+            <div class="pagination-container">
+                <?php
+                $rango_visible = 5;
+                $inicio = max(1, $pagina_actual - floor($rango_visible / 2));
+                $fin = min($total_paginas, $inicio + $rango_visible - 1);
+
+                if ($inicio > 1) {
+                    echo '<a href="?pagina=1&cantidad=' . $cantidad_por_pagina . '">1</a>';
+                    if ($inicio > 2) echo '<span>...</span>';
+                }
+
+                for ($i = $inicio; $i <= $fin; $i++) {
+                    $active = $pagina_actual == $i ? 'active' : '';
+                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina . '" class="' . $active . '">' . $i . '</a>';
+                }
+
+                if ($fin < $total_paginas) {
+                    if ($fin < $total_paginas - 1) echo '<span>...</span>';
+                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina . '">' . $total_paginas . '</a>';
+                }
+
+                if ($pagina_actual > 1) {
+                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina . '">Anterior</a>';
+                }
+
+                if ($pagina_actual < $total_paginas) {
+                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina . '">Siguiente</a>';
+                }
+                ?>
+            </div>
         <?php endif; ?>
                 <?php if (isset($_GET['importado'])): ?>
             <div id="success-msg">¡Archivo importado correctamente!</div>
@@ -202,6 +259,99 @@ if ($result->num_rows > 0) {
         function toggleAccountInfo() {
             const info = document.getElementById('accountInfo');
             info.style.display = info.style.display === 'none' ? 'block' : 'none';
+        }
+        function abrirEscaner() {
+            document.getElementById("escaneo-container").style.display = "block";
+            
+            const html5QrCode = new Html5Qrcode("lector");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // cámara trasera
+                config,
+                (decodedText, decodedResult) => {
+                    html5QrCode.stop(); // detener después de escanear
+                    buscarComponente(decodedText); // buscar en la BD
+                },
+                errorMessage => {
+                    // console.log(`Error: ${errorMessage}`);
+                }
+            ).catch(err => {
+                alert("No se pudo iniciar la cámara: " + err);
+            });
+        }
+
+        function buscarComponente(codigo) {
+            fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        document.querySelector('input[name="insumo"]').value = data.insumo;
+                        document.querySelector('input[name="codigo"]').value = data.codigo;
+                        document.querySelector('select[name="especialidad"]').value = data.especialidad;
+                        document.querySelector('select[name="formato"]').value = data.formato;
+                        document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
+                        alert("Componente detectado: " + data.insumo);
+                    } else {
+                        alert("Componente no encontrado para el código: " + codigo);
+                    }
+                });
+        }
+
+        let html5QrCode; // Variable global
+
+        function abrirEscaner() {
+            document.getElementById("escaneo-container").style.display = "block";
+            html5QrCode = new Html5Qrcode("lector");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText, decodedResult) => {
+                    html5QrCode.stop().then(() => {
+                        document.getElementById("escaneo-container").style.display = "none";
+                    });
+                    buscarComponente(decodedText);
+                },
+                errorMessage => {
+                    // console.warn(errorMessage);
+                }
+            ).catch(err => {
+                alert("Error al iniciar cámara: " + err);
+            });
+        }
+
+        function cerrarEscaner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById("escaneo-container").style.display = "none";
+                    html5QrCode.clear();
+                }).catch(err => {
+                    alert("No se pudo detener el escáner: " + err);
+                });
+            }
+        }
+
+        function buscarComponente(codigo) {
+            fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        document.querySelector('input[name="insumo"]').value = data.insumo;
+                        document.querySelector('input[name="codigo"]').value = data.codigo;
+                        document.querySelector('select[name="especialidad"]').value = data.especialidad;
+                        document.querySelector('select[name="formato"]').value = data.formato;
+                        document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
+                        alert("Componente detectado: " + data.insumo);
+                    } else {
+                        alert("Componente no encontrado para el código: " + codigo);
+                    }
+                });
+        }
+        function toggleExcelForm() {
+            const container = document.getElementById("excelFormContainer");
+            container.style.display = container.style.display === "none" ? "block" : "none";
         }
     </script>
 </body>
