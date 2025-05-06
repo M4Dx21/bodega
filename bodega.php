@@ -38,7 +38,6 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
             <h2>Lista de Componentes</h2>
             <table>
             <tr>
-                <th>ID</th>
                 <th>Código</th>
                 <th>Insumo</th>
                 <th>Stock</th>
@@ -47,7 +46,6 @@ $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
             </tr>
             <?php foreach ($personas_dentro as $componente): ?>
                 <tr>
-                    <td><?= $componente['id'] ?></td>
                     <td><?= htmlspecialchars($componente['codigo']) ?></td>
                     <td><?= htmlspecialchars($componente['insumo']) ?></td>
                     <td><?= htmlspecialchars($componente['stock']) ?></td>

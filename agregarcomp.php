@@ -116,6 +116,11 @@ if ($result->num_rows > 0) {
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
         <h2><?= $editando ? 'Editar Componente' : 'Agregar Componente' ?></h2>
+        <form action="importar_excel.php" method="post" enctype="multipart/form-data">
+            <label for="archivo_excel">Subir Excel:</label>
+            <input type="file" name="archivo_excel" accept=".xlsx, .xls">
+            <button type="submit">Importar</button>
+        </form>
         <form action="" method="post">
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
@@ -188,6 +193,9 @@ if ($result->num_rows > 0) {
                 </tr>
             <?php endforeach; ?>
             </table>
+        <?php endif; ?>
+                <?php if (isset($_GET['importado'])): ?>
+            <div id="success-msg">¡Archivo importado correctamente!</div>
         <?php endif; ?>
     </div>
     <script>
