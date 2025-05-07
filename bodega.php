@@ -88,7 +88,7 @@ if (isset($_GET['query'])) {
             <button type="submit">Agregar Insumos</button>
         </form>
         <?php if (!empty($personas_dentro)): ?>
-            <h2>Lista de Componentes</h2>
+            <h2>Lista de Insumos</h2>
             <table>
             <tr>
                 <th>Código</th>
@@ -117,16 +117,37 @@ if (isset($_GET['query'])) {
                         <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
                     <?php endforeach; ?>
                 </select>
-                <input type="hidden" name="codigo" value="<?= htmlspecialchars($nombre_usuario_filtro) ?>">
                 <input type="hidden" name="pagina" value="1">
             </form>
-            <div style="margin-top: 10px;">
-                <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
-                    <a href="?pagina=<?= $i ?>&cantidad=<?= $cantidad_por_pagina ?>&codigo=<?= urlencode($nombre_usuario_filtro) ?>"
-                    style="margin-right: 5px; <?= $pagina_actual == $i ? 'font-weight: bold;' : '' ?>">
-                    <?= $i ?>
-                    </a>
-                <?php endfor; ?>
+            <div class="pagination-container">
+                <?php
+                $rango_visible = 5;
+                $inicio = max(1, $pagina_actual - floor($rango_visible / 2));
+                $fin = min($total_paginas, $inicio + $rango_visible - 1);
+
+                if ($inicio > 1) {
+                    echo '<a href="?pagina=1&cantidad=' . $cantidad_por_pagina . '">1</a>';
+                    if ($inicio > 2) echo '<span>...</span>';
+                }
+
+                for ($i = $inicio; $i <= $fin; $i++) {
+                    $active = $pagina_actual == $i ? 'active' : '';
+                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina . '" class="' . $active . '">' . $i . '</a>';
+                }
+
+                if ($fin < $total_paginas) {
+                    if ($fin < $total_paginas - 1) echo '<span>...</span>';
+                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina . '">' . $total_paginas . '</a>';
+                }
+
+                if ($pagina_actual > 1) {
+                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina . '">Anterior</a>';
+                }
+
+                if ($pagina_actual < $total_paginas) {
+                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina . '">Siguiente</a>';
+                }
+                ?>
             </div>
         <?php else: ?>
             <p>No se encontraron resultados para tu búsqueda.</p>

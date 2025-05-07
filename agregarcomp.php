@@ -124,9 +124,8 @@ if ($result->num_rows > 0) {
         <div id="mensaje-container">
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
-        <h2><?= $editando ? 'Editar Componente' : 'Agregar Componente' ?></h2>
+        <h2><?= $editando ? 'Editar Insumos' : 'Agregar Insumos' ?></h2>
         <button type="button" onclick="toggleExcelForm()">📂 Importar desde Excel</button>
-
         <div id="excelFormContainer" style="display: none; margin-top: 10px;">
             <form action="importar_excel.php" method="post" enctype="multipart/form-data">
                 <label for="archivo_excel">Subir Excel:</label>
@@ -179,11 +178,11 @@ if ($result->num_rows > 0) {
                 <button type="submit" name="guardar_cambios">Guardar Cambios</button>
                 <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
             <?php else: ?>
-                <button type="submit" name="agregar">Agregar Componente</button>
+                <button type="submit" name="agregar">Agregar Insumos</button>
             <?php endif; ?>
         </form>
         <?php if (!empty($personas_dentro)): ?>
-            <h2>Lista de Componentes</h2>
+            <h2>Lista de Insumos</h2>
             <table>
             <tr>
                 <th>Código</th>
@@ -260,26 +259,6 @@ if ($result->num_rows > 0) {
             const info = document.getElementById('accountInfo');
             info.style.display = info.style.display === 'none' ? 'block' : 'none';
         }
-        function abrirEscaner() {
-            document.getElementById("escaneo-container").style.display = "block";
-            
-            const html5QrCode = new Html5Qrcode("lector");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            html5QrCode.start(
-                { facingMode: "environment" }, // cámara trasera
-                config,
-                (decodedText, decodedResult) => {
-                    html5QrCode.stop(); // detener después de escanear
-                    buscarComponente(decodedText); // buscar en la BD
-                },
-                errorMessage => {
-                    // console.log(`Error: ${errorMessage}`);
-                }
-            ).catch(err => {
-                alert("No se pudo iniciar la cámara: " + err);
-            });
-        }
 
         function buscarComponente(codigo) {
             fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
@@ -298,7 +277,7 @@ if ($result->num_rows > 0) {
                 });
         }
 
-        let html5QrCode; // Variable global
+        let html5QrCode;
 
         function abrirEscaner() {
             document.getElementById("escaneo-container").style.display = "block";
@@ -333,22 +312,6 @@ if ($result->num_rows > 0) {
             }
         }
 
-        function buscarComponente(codigo) {
-            fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.encontrado) {
-                        document.querySelector('input[name="insumo"]').value = data.insumo;
-                        document.querySelector('input[name="codigo"]').value = data.codigo;
-                        document.querySelector('select[name="especialidad"]').value = data.especialidad;
-                        document.querySelector('select[name="formato"]').value = data.formato;
-                        document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
-                        alert("Componente detectado: " + data.insumo);
-                    } else {
-                        alert("Componente no encontrado para el código: " + codigo);
-                    }
-                });
-        }
         function toggleExcelForm() {
             const container = document.getElementById("excelFormContainer");
             container.style.display = container.style.display === "none" ? "block" : "none";
