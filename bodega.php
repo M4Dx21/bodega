@@ -93,20 +93,23 @@ if (isset($_GET['query'])) {
             <tr>
                 <th>Código</th>
                 <th>Insumo</th>
+                <th>Formato</th>
                 <th>Stock</th>
+                <th>Ubicacion</th>
                 <th>Fecha</th>
-                <th>Acciones</th>
             </tr>
             <?php foreach ($personas_dentro as $componente): ?>
                 <tr>
                     <td><?= htmlspecialchars($componente['codigo']) ?></td>
                     <td><?= htmlspecialchars($componente['insumo']) ?></td>
+                    <td><?= htmlspecialchars($componente['formato']) ?></td>
                     <td><?= htmlspecialchars($componente['stock']) ?></td>
                     <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
-                    <td>
+                    <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
+                   <!-- <td>
                         <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>
-                        <a href="?eliminar=<?= $componente['id'] ?>" class="btn" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a>
-                    </td>
+                        <a href="?eliminar=<?= $componente['id'] ?>" class="btn" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a> 
+                    </td> -->
                 </tr>
             <?php endforeach; ?>
             </table>
