@@ -254,69 +254,83 @@ if ($result->num_rows > 0) {
             <div id="success-msg">¡Archivo importado correctamente!</div>
         <?php endif; ?>
     </div>
-    <script>
-        function toggleAccountInfo() {
-            const info = document.getElementById('accountInfo');
-            info.style.display = info.style.display === 'none' ? 'block' : 'none';
-        }
+<script>
+    function toggleAccountInfo() {
+        const info = document.getElementById('accountInfo');
+        info.style.display = info.style.display === 'none' ? 'block' : 'none';
+    }
 
-        function buscarComponente(codigo) {
-            fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.encontrado) {
-                        document.querySelector('input[name="insumo"]').value = data.insumo;
-                        document.querySelector('input[name="codigo"]').value = data.codigo;
-                        document.querySelector('select[name="especialidad"]').value = data.especialidad;
-                        document.querySelector('select[name="formato"]').value = data.formato;
-                        document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
-                        alert("Componente detectado: " + data.insumo);
-                    } else {
-                        alert("Componente no encontrado para el código: " + codigo);
-                    }
-                });
-        }
-
-        let html5QrCode;
-
-        function abrirEscaner() {
-            document.getElementById("escaneo-container").style.display = "block";
-            html5QrCode = new Html5Qrcode("lector");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText, decodedResult) => {
-                    html5QrCode.stop().then(() => {
-                        document.getElementById("escaneo-container").style.display = "none";
-                    });
-                    buscarComponente(decodedText);
-                },
-                errorMessage => {
-                    // console.warn(errorMessage);
+    function buscarComponente(codigo) {
+        // Usamos Fetch para obtener el componente por su código
+        fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+            .then(response => response.json())
+            .then(data => {
+                if (data.encontrado) {
+                    // Rellenamos los campos con los valores del insumo encontrado
+                    document.querySelector('input[name="insumo"]').value = data.insumo;
+                    document.querySelector('input[name="codigo"]').value = data.codigo;
+                    document.querySelector('select[name="especialidad"]').value = data.especialidad;
+                    document.querySelector('select[name="formato"]').value = data.formato;
+                    document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
+                    document.querySelector('input[name="stock"]').value = data.stock;
+                    alert("Componente detectado: " + data.insumo);
+                } else {
+                    alert("Componente no encontrado para el código: " + codigo);
                 }
-            ).catch(err => {
-                alert("Error al iniciar cámara: " + err);
+            })
+            .catch(error => {
+                alert("Error al buscar el componente: " + error);
             });
-        }
+    }
 
-        function cerrarEscaner() {
-            if (html5QrCode) {
+    let html5QrCode;
+
+    function abrirEscaner() {
+        document.getElementById("escaneo-container").style.display = "block";
+        html5QrCode = new Html5Qrcode("lector");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText, decodedResult) => {
                 html5QrCode.stop().then(() => {
                     document.getElementById("escaneo-container").style.display = "none";
-                    html5QrCode.clear();
-                }).catch(err => {
-                    alert("No se pudo detener el escáner: " + err);
                 });
+                buscarComponente(decodedText); // Llamada con el código decodificado
+            },
+            errorMessage => {
+                // console.warn(errorMessage);
             }
-        }
+        ).catch(err => {
+            alert("Error al iniciar cámara: " + err);
+        });
+    }
 
-        function toggleExcelForm() {
-            const container = document.getElementById("excelFormContainer");
-            container.style.display = container.style.display === "none" ? "block" : "none";
+    function cerrarEscaner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById("escaneo-container").style.display = "none";
+                html5QrCode.clear();
+            }).catch(err => {
+                alert("No se pudo detener el escáner: " + err);
+            });
         }
-    </script>
+    }
+
+    function toggleExcelForm() {
+        const container = document.getElementById("excelFormContainer");
+        container.style.display = container.style.display === "none" ? "block" : "none";
+    }
+
+    // Evento para capturar la tecla 'n' y completar los campos con el insumo con código '0140010367'
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'n') {
+            buscarComponente('0140010367');  // Código específico al presionar 'n'
+        }
+    });
+</script>
+
 </body>
 </html>
 
