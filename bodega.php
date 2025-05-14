@@ -104,8 +104,8 @@ if (isset($_GET['query'])) {
                     <td><?= htmlspecialchars($componente['insumo']) ?></td>
                     <td><?= htmlspecialchars($componente['formato']) ?></td>
                     <td><?= htmlspecialchars($componente['stock']) ?></td>
-                    <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
                     <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
+                    <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
                    <!-- <td>
                         <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>
                         <a href="?eliminar=<?= $componente['id'] ?>" class="btn" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a> 
@@ -184,7 +184,7 @@ if (isset($_GET['query'])) {
                             const div = document.createElement("div");
                             div.textContent = item;
                             div.addEventListener("click", () => {
-                                input.value = item.split(" - ")[0]; // Solo deja el código
+                                input.value = item.split(" - ")[0];
                                 sugerenciasBox.innerHTML = "";
                                 sugerenciasBox.style.display = "none";
                             });
