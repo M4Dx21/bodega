@@ -38,15 +38,36 @@ if (isset($_POST['agregar'])) {
     $especialidad = $_POST["especialidad"];
     $formato = $_POST["formato"];
     $ubicacion = $_POST["ubicacion"];
-
     $fecha_ingreso = date('Y-m-d H:i:s');
 
-    $insert = "INSERT INTO componentes (codigo, insumo, stock, especialidad, formato, ubicacion, fecha_ingreso) 
-               VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$ubicacion', '$fecha_ingreso')";
-    mysqli_query($conn, $insert);
-    header("Location: " . $_SERVER['PHP_SELF']);
+    // Verificar si el insumo ya existe por su código
+    $consulta_existente = "SELECT * FROM componentes WHERE codigo = '$codigo'";
+    $resultado_existente = mysqli_query($conn, $consulta_existente);
+
+    if (mysqli_num_rows($resultado_existente) > 0) {
+        // Si existe, actualizar el insumo
+        $update = "UPDATE componentes SET 
+                    insumo = '$nombre', 
+                    stock = stock + $stock, 
+                    especialidad = '$especialidad', 
+                    formato = '$formato', 
+                    ubicacion = '$ubicacion', 
+                    fecha_ingreso = '$fecha_ingreso'
+                   WHERE codigo = '$codigo'";
+        mysqli_query($conn, $update);
+        $mensaje = "Insumo actualizado correctamente.";
+    } else {
+        // Si no existe, agregar uno nuevo
+        $insert = "INSERT INTO componentes (codigo, insumo, stock, especialidad, formato, ubicacion, fecha_ingreso) 
+                   VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$ubicacion', '$fecha_ingreso')";
+        mysqli_query($conn, $insert);
+        $mensaje = "Insumo agregado correctamente.";
+    }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?mensaje=" . urlencode($mensaje));
     exit();
 }
+
 
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
@@ -144,10 +165,10 @@ if ($result->num_rows > 0) {
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
             <?php endif; ?>
+            <input type="text" name="codigo" placeholder="Código Ad" required
+                value="<?= $editando ? $componente_edit['codigo'] : '' ?>" onblur="buscarComponente(this.value)">
             <input type="text" name="insumo" placeholder="Insumo" required
                 value="<?= $editando ? $componente_edit['insumo'] : '' ?>">
-            <input type="text" name="codigo" placeholder="Código Ad" required
-                value="<?= $editando ? $componente_edit['codigo'] : '' ?>">
                 <select name="especialidad" required>
                     <option value="">Seleccione especialidad</option>
                     <?php foreach ($enum_especialidades as $valor): ?>
@@ -318,6 +339,28 @@ if ($result->num_rows > 0) {
         }
     }
 
+    function buscarComponente(codigo) {
+    if (codigo.trim() === "") return;
+
+    fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+        .then(response => response.json())
+        .then(data => {
+            if (data.encontrado) {
+                // Rellenar los campos con los datos del insumo encontrado
+                document.querySelector('input[name="insumo"]').value = data.insumo;
+                document.querySelector('input[name="stock"]').value = data.stock;
+                document.querySelector('select[name="especialidad"]').value = data.especialidad;
+                document.querySelector('select[name="formato"]').value = data.formato;
+                document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
+                alert("Insumo detectado: " + data.insumo);
+            } else {
+                alert("El insumo no se encuentra en la base de datos.");
+            }
+        })
+        .catch(error => {
+            alert("Error al buscar el insumo: " + error);
+        });
+    }
     function toggleExcelForm() {
         const container = document.getElementById("excelFormContainer");
         container.style.display = container.style.display === "none" ? "block" : "none";

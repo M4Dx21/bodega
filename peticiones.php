@@ -12,28 +12,28 @@ $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
 // Consulta base con filtros
-$sql_base = "FROM componentes WHERE 1";
-
+$sql_base = "FROM cirugias WHERE 1";
 if (!empty($nombre_usuario_filtro)) {
-    $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
+    $sql_base .= " AND (cod_cirugia LIKE '%$nombre_usuario_filtro%' OR cirugia LIKE '%$nombre_usuario_filtro%')";
 }
+$sql_total = "SELECT COUNT(*) as total " . $sql_base;
+$sql_final = "SELECT * " . $sql_base . " ORDER BY id DESC LIMIT $cantidad_por_pagina OFFSET $offset";
+
 
 // Consulta total para paginación
-$sql_total = "SELECT COUNT(*) as total " . $sql_base;
 $total_resultado = mysqli_query($conn, $sql_total);
 $total_filas = mysqli_fetch_assoc($total_resultado)['total'];
 $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
 // Consulta final con paginación
-$sql_final = "SELECT * " . $sql_base . " ORDER BY fecha_ingreso DESC LIMIT $cantidad_por_pagina OFFSET $offset";
 $resultado = mysqli_query($conn, $sql_final);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
 // Autocompletado
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
-    $sql = "SELECT codigo, insumo FROM componentes 
-            WHERE codigo LIKE '%$query%' OR insumo LIKE '%$query%' 
+    $sql = "SELECT cod_cirugia, cirugia FROM cirugias 
+            WHERE cod_cirugia LIKE '%$query%' OR cirugia LIKE '%$query%' 
             LIMIT 10";
     $result = $conn->query($sql);
     $suggestions = [];
@@ -80,38 +80,33 @@ if (isset($_GET['query'])) {
                 </div>
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='peticiones.php'">Limpiar Filtros</button>
                 </div>
             </form>
         </div>
-        <form action="agregarcomp.php" method="post">
-            <button type="submit">Agregar Insumos</button>
-        </form>
         <?php if (!empty($personas_dentro)): ?>
             <h2>Lista de Insumos</h2>
             <table>
-            <tr>
-                <th>Código</th>
-                <th>Insumo</th>
-                <th>Formato</th>
-                <th>Stock</th>
-                <th>Ubicacion</th>
-                <th>Fecha</th>
-            </tr>
-            <?php foreach ($personas_dentro as $componente): ?>
                 <tr>
-                    <td><?= htmlspecialchars($componente['codigo']) ?></td>
-                    <td><?= htmlspecialchars($componente['insumo']) ?></td>
-                    <td><?= htmlspecialchars($componente['formato']) ?></td>
-                    <td><?= htmlspecialchars($componente['stock']) ?></td>
-                    <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
-                    <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
-                   <!-- <td>
-                        <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>
-                        <a href="?eliminar=<?= $componente['id'] ?>" class="btn" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a> 
-                    </td> -->
+                    <th>Código de Cirugía</th>
+                    <th>Cirugía</th>
+                    <th>Pabellón</th>
+                    <th>Cirujano</th>
+                    <th>Equipo</th>
+                    <th>Paciente</th>
+                    <th>Insumos</th>
                 </tr>
-            <?php endforeach; ?>
+                <?php foreach ($personas_dentro as $cirugia): ?>
+                <tr>
+                    <td><?= htmlspecialchars($cirugia['cod_cirugia']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['cirugia']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['pabellon']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['cirujano']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['equipo']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['nombre_paciente']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['insumos']) ?></td>
+                </tr>
+                <?php endforeach; ?>
             </table>
             <form method="GET" style="margin-bottom: 10px;">
                 <label for="cantidad">Mostrar:</label>
@@ -158,6 +153,12 @@ if (isset($_GET['query'])) {
     </div>
 
     <script>
+        div.addEventListener("click", () => {
+            input.value = item.split(" - ")[0];
+            sugerenciasBox.innerHTML = "";
+            sugerenciasBox.style.display = "none";
+        });
+
         document.addEventListener("DOMContentLoaded", function() {
             const input = document.getElementById("codigo");
             const sugerenciasBox = document.getElementById("sugerencias");
@@ -171,7 +172,7 @@ if (isset($_GET['query'])) {
                     return;
                 }
 
-                fetch(`bodega.php?query=${encodeURIComponent(query)}`)
+                fetch(`gestion_cirugias.php?query=${encodeURIComponent(query)}`)
                     .then(res => res.json())
                     .then(data => {
                         sugerenciasBox.innerHTML = "";
@@ -191,7 +192,7 @@ if (isset($_GET['query'])) {
                             sugerenciasBox.appendChild(div);
                         });
                         sugerenciasBox.style.display = "block";
-                    });
+                });
             });
 
             document.addEventListener("click", function(e) {
