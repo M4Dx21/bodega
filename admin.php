@@ -140,6 +140,14 @@ if ($result3->num_rows > 0) {
         $solicitudes_result3[] = $row;
     }
 }
+$sql4 = "SELECT nombre, rut, rol FROM usuarios WHERE rol = 'doctor'";
+$result4 = $conn->query($sql4);
+$solicitudes_result4 = [];
+if ($result4->num_rows > 0) {
+    while ($row = $result4->fetch_assoc()) {
+        $solicitudes_result4[] = $row;
+    }
+}
 
 ?>
 <!DOCTYPE html>
@@ -164,10 +172,10 @@ if ($result3->num_rows > 0) {
             var rol = document.getElementById('rol').value;
             var correoInput = document.getElementById('correo');
             
-            if (rol === 'solicitante') {
+            if (rol === 'admin') {
                 correoInput.disabled = true;
             }
-            else if (rol === 'admin') {
+            else if (rol === 'doctor') {
                 correoInput.disabled = true;
             } else {
                 correoInput.disabled = false;
@@ -188,13 +196,12 @@ if ($result3->num_rows > 0) {
 </head>
 <body>
     <div class="container">
-        
         <form method="POST" action="">
             <select name="rol" required id="rol" onchange="toggleCorreo()">
                 <option value="">Selecciona una opcion</option>
                 <option value="bodeguero">Bodeguero</option>
                 <option value="admin">Admin</option>
-                <option value="admin">Doctor</option>
+                <option value="doctor">Doctor</option>
             </select>
             <input type="text" name="rut" placeholder="RUT (sin puntos ni guion, solo con guion para ingresar usuario tipo administrador)" required id="rut" onblur="validarRUTInput()" oninput="limpiarRut()">
             <input type="text" name="nombre" placeholder="Nombre" required id="nombre">
@@ -261,8 +268,35 @@ if ($result3->num_rows > 0) {
                 </tbody>
             </table>
         <?php endif; ?>
-
-
+        
+        <?php if (!empty($solicitudes_result4)): ?>
+            <h3>Doctores:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>RUT</th>
+                        <th>Rol</th>
+                        <th>Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($solicitudes_result4 as $solicitud3): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($solicitud3['nombre']); ?></td>
+                            <td><?php echo htmlspecialchars($solicitud3['rut']); ?></td>
+                            <td><?php echo htmlspecialchars($solicitud3['rol']); ?></td>
+                            <td>
+                                <form method="POST" action="">
+                                    <input type="hidden" name="rut" value="<?php echo $solicitud3['rut']; ?>">
+                                    <button type="submit" name="eliminar-usuario" class="rechazar-btn-table">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
 </body>
 </html>
