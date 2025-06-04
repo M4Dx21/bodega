@@ -2,6 +2,32 @@
 include 'db.php';
 session_start();
 
+// Filtros desde GET
+$nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
+
+// Consulta base con filtros
+$sql_base = "FROM componentes WHERE 1";
+
+if (!empty($nombre_usuario_filtro)) {
+    $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
+}
+
+// Autocompletado
+if (isset($_GET['query'])) {
+    $query = $conn->real_escape_string($_GET['query']);
+    $sql = "SELECT codigo, insumo FROM componentes 
+            WHERE codigo LIKE '%$query%' OR insumo LIKE '%$query%' 
+            LIMIT 10";
+    $result = $conn->query($sql);
+    $suggestions = [];
+    while ($row = $result->fetch_assoc()) {
+        $suggestions[] = $row['codigo'] . " - " . $row['insumo'];
+    }
+    header('Content-Type: application/json');
+    echo json_encode($suggestions);
+    exit();
+}
+
 $editando = false;
 $componente_edit = null;
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
@@ -135,6 +161,7 @@ if ($result->num_rows > 0) {
             <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
+                <button type="button" class="volver-btn" onclick="window.location.href='bodega.php'">Volver</button>
             </form>
         </div>
     </div>
@@ -143,6 +170,21 @@ if ($result->num_rows > 0) {
 </head>
 <body>
     <div class="container">
+        <div class="filters">
+            <form method="GET" action="">
+                <label for="codigo">Insumo:</label>
+                <div class="input-sugerencias-wrapper">
+                    <input type="text" id="codigo" name="codigo" autocomplete="off"
+                        placeholder="Escribe el insumo para buscar..."
+                        value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
+                    <div id="sugerencias" class="sugerencias-box"></div>
+                </div>
+                <div class="botones-filtros">
+                    <button type="submit">Filtrar</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+                </div>
+            </form>
+        </div>
         <div id="mensaje-container">
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
@@ -288,12 +330,10 @@ if ($result->num_rows > 0) {
     }
 
     function buscarComponente(codigo) {
-        // Usamos Fetch para obtener el componente por su código
         fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
             .then(response => response.json())
             .then(data => {
                 if (data.encontrado) {
-                    // Rellenamos los campos con los valores del insumo encontrado
                     document.querySelector('input[name="insumo"]').value = data.insumo;
                     document.querySelector('input[name="codigo"]').value = data.codigo;
                     document.querySelector('select[name="especialidad"]').value = data.especialidad;
@@ -324,13 +364,12 @@ if ($result->num_rows > 0) {
                 html5QrCode.stop().then(() => {
                     document.getElementById("escaneo-container").style.display = "none";
                     document.querySelector('input[name="codigo"]').value = decodedText;
-                    buscarComponente(decodedText); // buscar el insumo con ese código
+                    buscarComponente(decodedText);
                 }).catch(err => {
                     console.error("Error al detener el escáner: ", err);
                 });
             },
             errorMessage => {
-                // Puedes manejar errores silenciosamente aquí si deseas
             }
         ).catch(err => {
             console.error("Error al iniciar el escáner: ", err);
@@ -354,7 +393,6 @@ if ($result->num_rows > 0) {
         .then(response => response.json())
         .then(data => {
             if (data.encontrado) {
-                // Rellenar los campos con los datos del insumo encontrado
                 document.querySelector('input[name="insumo"]').value = data.insumo;
                 document.querySelector('input[name="stock"]').value = data.stock;
                 document.querySelector('select[name="especialidad"]').value = data.especialidad;
@@ -376,13 +414,56 @@ if ($result->num_rows > 0) {
 
     function generarQR(texto, contenedorId) {
         const contenedor = document.getElementById(contenedorId);
-        contenedor.innerHTML = ""; // Limpiar si ya existe un QR
+        contenedor.innerHTML = "";
         new QRCode(contenedor, {
             text: texto,
             width: 150,
             height: 150
         });
-    }    
+    }
+    
+            document.addEventListener("DOMContentLoaded", function() {
+            const input = document.getElementById("codigo");
+            const sugerenciasBox = document.getElementById("sugerencias");
+
+            input.addEventListener("input", function() {
+                const query = input.value;
+
+                if (query.length < 2) {
+                    sugerenciasBox.innerHTML = "";
+                    sugerenciasBox.style.display = "none";
+                    return;
+                }
+
+                fetch(`agregarcomp.php?query=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        sugerenciasBox.innerHTML = "";
+                        if (data.length === 0) {
+                            sugerenciasBox.style.display = "none";
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            const div = document.createElement("div");
+                            div.textContent = item;
+                            div.addEventListener("click", () => {
+                                input.value = item.split(" - ")[0];
+                                sugerenciasBox.innerHTML = "";
+                                sugerenciasBox.style.display = "none";
+                            });
+                            sugerenciasBox.appendChild(div);
+                        });
+                        sugerenciasBox.style.display = "block";
+                    });
+            });
+
+        document.addEventListener("click", function(e) {
+                if (!sugerenciasBox.contains(e.target) && e.target !== input) {
+                    sugerenciasBox.style.display = "none";
+                }
+            });
+        });
 </script>
 
 </body>
