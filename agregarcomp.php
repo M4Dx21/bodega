@@ -35,10 +35,10 @@ $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $c
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-$consulta = "SELECT * FROM componentes ORDER BY fecha_ingreso DESC LIMIT $cantidad_por_pagina OFFSET $offset";
+$consulta = "SELECT * $sql_base ORDER BY fecha_ingreso DESC LIMIT $cantidad_por_pagina OFFSET $offset";
 $resultado = mysqli_query($conn, $consulta);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
-$total_resultado = mysqli_query($conn, "SELECT COUNT(*) AS total FROM componentes");
+$total_resultado = mysqli_query($conn, "SELECT COUNT(*) AS total $sql_base");
 $total_filas = mysqli_fetch_assoc($total_resultado)['total'];
 $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
