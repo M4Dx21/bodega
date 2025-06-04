@@ -91,28 +91,24 @@ if (isset($_GET['query'])) {
         <?php if (!empty($personas_dentro)): ?>
             <h2>Lista de Insumos</h2>
             <table>
-            <tr>
-                <th>Código</th>
-                <th>Insumo</th>
-                <th>Formato</th>
-                <th>Stock</th>
-                <th>Ubicacion</th>
-                <th>Fecha</th>
-            </tr>
-            <?php foreach ($personas_dentro as $componente): ?>
                 <tr>
-                    <td><?= htmlspecialchars($componente['codigo']) ?></td>
-                    <td><?= htmlspecialchars($componente['insumo']) ?></td>
-                    <td><?= htmlspecialchars($componente['formato']) ?></td>
-                    <td><?= htmlspecialchars($componente['stock']) ?></td>
-                    <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
-                    <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
-                   <!-- <td>
-                        <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>
-                        <a href="?eliminar=<?= $componente['id'] ?>" class="btn" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a> 
-                    </td> -->
+                    <th>Código</th>
+                    <th>Insumo</th>
+                    <th>Formato</th>
+                    <th>Stock</th>
+                    <th>Ubicación</th>
+                    <th>Fecha</th>
                 </tr>
-            <?php endforeach; ?>
+                <?php foreach ($personas_dentro as $componente): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($componente['codigo']) ?></td>
+                        <td><?= htmlspecialchars($componente['insumo']) ?></td>
+                        <td><?= htmlspecialchars($componente['formato']) ?></td>
+                        <td><?= htmlspecialchars($componente['stock']) ?></td>
+                        <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
+                        <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
+                    </tr>
+                <?php endforeach; ?>
             </table>
             <form method="GET" style="margin-bottom: 10px;">
                 <label for="cantidad">Mostrar:</label>

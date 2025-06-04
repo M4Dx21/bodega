@@ -139,6 +139,7 @@ if ($result->num_rows > 0) {
         </div>
     </div>
     <script src="https://unpkg.com/html5-qrcode"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -165,7 +166,7 @@ if ($result->num_rows > 0) {
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
             <?php endif; ?>
-            <input type="text" name="codigo" placeholder="Código Ad" required
+            <input type="text" id="codigo" name="codigo" placeholder="Código Ad" required
                 value="<?= $editando ? $componente_edit['codigo'] : '' ?>" onblur="buscarComponente(this.value)">
             <input type="text" name="insumo" placeholder="Insumo" required
                 value="<?= $editando ? $componente_edit['insumo'] : '' ?>">
@@ -214,6 +215,7 @@ if ($result->num_rows > 0) {
                 <th>Ubicacion</th>
                 <th>Fecha</th>
                 <th>Acciones</th>
+                <th>QR</th>
             </tr>
             <?php foreach ($personas_dentro as $componente): ?>
                 <tr>
@@ -227,6 +229,10 @@ if ($result->num_rows > 0) {
                     <td>
                         <a href="?editar=<?= $componente['id'] ?>" class="btn">Editar</a>
                         <a href="?eliminar=<?= $componente['id'] ?>" class="btn" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a>
+                    </td>
+                    <td>
+                        <button onclick="generarQR('<?= htmlspecialchars($componente['codigo']) ?>', 'qr_<?= $componente['id'] ?>')">Generar QR</button>
+                        <div id="qr_<?= $componente['id'] ?>" style="margin-top:5px;"></div>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -317,28 +323,30 @@ if ($result->num_rows > 0) {
             (decodedText, decodedResult) => {
                 html5QrCode.stop().then(() => {
                     document.getElementById("escaneo-container").style.display = "none";
+                    document.querySelector('input[name="codigo"]').value = decodedText;
+                    buscarComponente(decodedText); // buscar el insumo con ese código
+                }).catch(err => {
+                    console.error("Error al detener el escáner: ", err);
                 });
-                buscarComponente(decodedText); // Llamada con el código decodificado
             },
             errorMessage => {
-                // console.warn(errorMessage);
+                // Puedes manejar errores silenciosamente aquí si deseas
             }
         ).catch(err => {
-            alert("Error al iniciar cámara: " + err);
+            console.error("Error al iniciar el escáner: ", err);
         });
     }
 
     function cerrarEscaner() {
         if (html5QrCode) {
             html5QrCode.stop().then(() => {
-                document.getElementById("escaneo-container").style.display = "none";
                 html5QrCode.clear();
+                document.getElementById("escaneo-container").style.display = "none";
             }).catch(err => {
-                alert("No se pudo detener el escáner: " + err);
+                console.error("Error al detener el escáner: ", err);
             });
         }
     }
-
     function buscarComponente(codigo) {
     if (codigo.trim() === "") return;
 
@@ -366,12 +374,15 @@ if ($result->num_rows > 0) {
         container.style.display = container.style.display === "none" ? "block" : "none";
     }
 
-    // Evento para capturar la tecla 'n' y completar los campos con el insumo con código '0140010367'
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'n') {
-            buscarComponente('0140010367');  // Código específico al presionar 'n'
-        }
-    });
+    function generarQR(texto, contenedorId) {
+        const contenedor = document.getElementById(contenedorId);
+        contenedor.innerHTML = ""; // Limpiar si ya existe un QR
+        new QRCode(contenedor, {
+            text: texto,
+            width: 150,
+            height: 150
+        });
+    }    
 </script>
 
 </body>

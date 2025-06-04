@@ -247,7 +247,6 @@ if ($result4->num_rows > 0) {
                     <tr>
                         <th>Nombre</th>
                         <th>RUT</th>
-                        <th>Rol</th>
                         <th>Eliminar</th>
                     </tr>
                 </thead>
@@ -256,7 +255,6 @@ if ($result4->num_rows > 0) {
                         <tr>
                             <td><?php echo htmlspecialchars($solicitud3['nombre']); ?></td>
                             <td><?php echo htmlspecialchars($solicitud3['rut']); ?></td>
-                            <td><?php echo htmlspecialchars($solicitud3['rol']); ?></td>
                             <td>
                                 <form method="POST" action="">
                                     <input type="hidden" name="rut" value="<?php echo $solicitud3['rut']; ?>">
@@ -276,7 +274,6 @@ if ($result4->num_rows > 0) {
                     <tr>
                         <th>Nombre</th>
                         <th>RUT</th>
-                        <th>Rol</th>
                         <th>Eliminar</th>
                     </tr>
                 </thead>
@@ -285,7 +282,6 @@ if ($result4->num_rows > 0) {
                         <tr>
                             <td><?php echo htmlspecialchars($solicitud3['nombre']); ?></td>
                             <td><?php echo htmlspecialchars($solicitud3['rut']); ?></td>
-                            <td><?php echo htmlspecialchars($solicitud3['rol']); ?></td>
                             <td>
                                 <form method="POST" action="">
                                     <input type="hidden" name="rut" value="<?php echo $solicitud3['rut']; ?>">
