@@ -1,10 +1,10 @@
 <?php
 session_start();
 include 'db.php';
+include 'funciones.php';
 
 // Filtros desde GET
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
-
 // Paginación
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
@@ -16,6 +16,11 @@ $sql_base = "FROM componentes WHERE 1";
 
 if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
+}
+// Obtener insumos con stock bajo
+$insumosBajos = obtenerInsumosBajoStock();
+if ($insumosBajos !== false && !empty($insumosBajos)) {
+    $_SESSION['alertas_stock'] = $insumosBajos;
 }
 
 // Consulta total para paginación
@@ -49,9 +54,68 @@ if (isset($_GET['query'])) {
 <html lang="es">
 <head>
     <link rel="stylesheet" href="asset/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta charset="UTF-8">
     <title>Administración de Insumos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        /* aqui cambio*/
+        /* Estilos para el botón de alertas */
+            /* Ajustes para integrar el botón en la línea de filtros */
+            .botones-filtros {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            
+            /* Estilos para el botón de alertas (versión compacta) */
+            .btn-alertas {
+                position: relative;
+                background-color: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+                border-radius: 4px;
+                padding: 6px 12px;
+                cursor: pointer;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 14px;
+            }
+            
+            .btn-alertas:hover {
+                background-color: #f5c6cb;
+            }
+            
+            .alert-badge {
+                background-color: #dc3545;
+                color: white;
+                border-radius: 50%;
+                width: 18px;
+                height: 18px;
+                font-size: 11px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Panel de alertas ajustado */
+            .alert-panel {
+                display: none;
+                position: absolute;
+                top: 35px;
+                right: 0;
+                width: 280px;
+                background: white;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                border-radius: 5px;
+                z-index: 1000;
+                padding: 12px;
+            }
+        /* aqui cambio*/
+    </style>
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
@@ -82,8 +146,43 @@ if (isset($_GET['query'])) {
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
                     <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+                    
+                    <div style="position: relative; display: inline-block;">
+                        <button type="button" class="btn-alertas" onclick="toggleAlertPanel()">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Alertas de Stock
+                            <?php if (!empty($insumosBajos)): ?>
+                                <span class="alert-badge"><?= count($insumosBajos) ?></span>
+                            <?php endif; ?>
+                        </button>
+                        
+                        <!-- Panel de alertas desplegable -->
+                        <div class="alert-panel" id="alertPanel">
+                            <?php if (!empty($insumosBajos)): ?>
+                                <h5 style="margin-top: 0; color: #721c24;">
+                                    <i class="fas fa-boxes"></i> Insumos con Stock Bajo
+                                </h5>
+                                <ul style="padding-left: 20px; margin-bottom: 0;">
+                                <?php foreach ($insumosBajos as $insumo): ?>
+                                    <li style="margin-bottom: 8px;">
+                                        <strong><?= htmlspecialchars($insumo['insumo']) ?></strong>
+                                        <div style="font-size: 0.9em;">
+                                            Stock: <?= $insumo['stock'] ?> | 
+                                            Ubicación: <?= htmlspecialchars($insumo['ubicacion']) ?>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
+                                <p style="margin-bottom: 0;">No hay alertas de stock</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
-            </form>
+                <a href="historial_salidas.php" class="btn-dashboard">📄 Ver historial de salidas</a>
+
+                </form>
+                <button class="btn-dashboard" id="dashboardBtn"><i class="fas fa-chart-line"></i> Dashboard</button>
         </div>
         <form action="agregarcomp.php" method="post">
             <button type="submit">Agregar Insumos</button>
@@ -155,6 +254,20 @@ if (isset($_GET['query'])) {
     </div>
 
     <script>
+        function toggleAlertPanel() {
+            const panel = document.getElementById('alertPanel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        document.addEventListener('click', function(event) {
+            const alertBtn = document.querySelector('.btn-alertas');
+            const panel = document.getElementById('alertPanel');
+            
+            if (!alertBtn.contains(event.target) && event.target !== alertBtn) {
+                panel.style.display = 'none';
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", function() {
             const input = document.getElementById("codigo");
             const sugerenciasBox = document.getElementById("sugerencias");
@@ -202,6 +315,9 @@ if (isset($_GET['query'])) {
             const info = document.getElementById('accountInfo');
             info.style.display = info.style.display === 'none' ? 'block' : 'none';
         }
+        document.getElementById('dashboardBtn').addEventListener('click', function() {
+            window.location.href = 'dashboard.php';
+        });
     </script>
 </body>
 </html>

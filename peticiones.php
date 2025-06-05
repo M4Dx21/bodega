@@ -104,7 +104,7 @@ if (isset($_GET['query'])) {
                     <td><?= htmlspecialchars($cirugia['pabellon']) ?></td>
                     <td><?= htmlspecialchars($cirugia['cirujano']) ?></td>
                     <td><?= htmlspecialchars($cirugia['equipo']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['nombre_paciente']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['rut_paciente']) ?></td>
                     <td><?= htmlspecialchars($cirugia['insumos']) ?></td>
                 </tr>
                 <?php endforeach; ?>

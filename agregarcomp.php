@@ -66,12 +66,10 @@ if (isset($_POST['agregar'])) {
     $ubicacion = $_POST["ubicacion"];
     $fecha_ingreso = date('Y-m-d H:i:s');
 
-    // Verificar si el insumo ya existe por su código
     $consulta_existente = "SELECT * FROM componentes WHERE codigo = '$codigo'";
     $resultado_existente = mysqli_query($conn, $consulta_existente);
 
     if (mysqli_num_rows($resultado_existente) > 0) {
-        // Si existe, actualizar el insumo
         $update = "UPDATE componentes SET 
                     insumo = '$nombre', 
                     stock = stock + $stock, 
@@ -83,7 +81,6 @@ if (isset($_POST['agregar'])) {
         mysqli_query($conn, $update);
         $mensaje = "Insumo actualizado correctamente.";
     } else {
-        // Si no existe, agregar uno nuevo
         $insert = "INSERT INTO componentes (codigo, insumo, stock, especialidad, formato, ubicacion, fecha_ingreso) 
                    VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$ubicacion', '$fecha_ingreso')";
         mysqli_query($conn, $insert);
@@ -181,7 +178,7 @@ if ($result->num_rows > 0) {
                 </div>
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='agregarcomp.php'">Limpiar Filtros</button>
                 </div>
             </form>
         </div>
@@ -329,27 +326,6 @@ if ($result->num_rows > 0) {
         info.style.display = info.style.display === 'none' ? 'block' : 'none';
     }
 
-    function buscarComponente(codigo) {
-        fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
-            .then(response => response.json())
-            .then(data => {
-                if (data.encontrado) {
-                    document.querySelector('input[name="insumo"]').value = data.insumo;
-                    document.querySelector('input[name="codigo"]').value = data.codigo;
-                    document.querySelector('select[name="especialidad"]').value = data.especialidad;
-                    document.querySelector('select[name="formato"]').value = data.formato;
-                    document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
-                    document.querySelector('input[name="stock"]').value = data.stock;
-                    alert("Componente detectado: " + data.insumo);
-                } else {
-                    alert("Componente no encontrado para el código: " + codigo);
-                }
-            })
-            .catch(error => {
-                alert("Error al buscar el componente: " + error);
-            });
-    }
-
     let html5QrCode;
 
     function abrirEscaner() {
@@ -393,6 +369,7 @@ if ($result->num_rows > 0) {
         .then(response => response.json())
         .then(data => {
             if (data.encontrado) {
+                document.querySelector('input[name="codigo"]').value = data.codigo;
                 document.querySelector('input[name="insumo"]').value = data.insumo;
                 document.querySelector('input[name="stock"]').value = data.stock;
                 document.querySelector('select[name="especialidad"]').value = data.especialidad;
