@@ -171,7 +171,7 @@ if ($result->num_rows > 0) {
             <form method="GET" action="">
                 <label for="codigo">Insumo:</label>
                 <div class="input-sugerencias-wrapper">
-                    <input type="text" id="codigo" name="codigo" autocomplete="off"
+                    <input type="text" id="filtro_codigo" name="filtro_codigo" autocomplete="off"
                         placeholder="Escribe el insumo para buscar..."
                         value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>

@@ -44,6 +44,85 @@ if (isset($_GET['query'])) {
     echo json_encode($suggestions);
     exit();
 }
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
+    $id = $_POST["id"]; 
+
+    // 1. Actualizar estado de cirugía
+    if ($stmt = $conn->prepare("UPDATE cirugias SET estado = 'aceptada' WHERE id = ?")) {
+        $stmt->bind_param("i", $id);
+        if (!$stmt->execute()) {
+            die("Error actualizando estado cirugía: " . $stmt->error);
+        }
+    } else {
+        die("Error preparando update cirugía: " . $conn->error);
+    }
+
+    // 2. Obtener lista de insumos
+    if ($stmt_detalle = $conn->prepare("SELECT insumos FROM cirugias WHERE id = ?")) {
+        $stmt_detalle->bind_param("i", $id);
+        $stmt_detalle->execute();
+        $result_detalle = $stmt_detalle->get_result();
+
+        if ($fila = $result_detalle->fetch_assoc()) {
+            $lista_insumos = $fila['insumos'];
+            $insumos_array = explode(',', $lista_insumos);
+
+            foreach ($insumos_array as $insumo_cantidad) {
+                if (preg_match('/^(.*?)\s*\(x(\d+)\)$/i', trim($insumo_cantidad), $matches)) {
+                    $nombre_insumo = trim($matches[1]);
+                    $cantidad = (int)$matches[2];
+
+                    // 3. Restar stock de cada insumo
+                    if ($stmt_resta_stock = $conn->prepare("UPDATE componentes SET stock = stock - ? WHERE LOWER(insumo) = LOWER(?)")) {
+                        $stmt_resta_stock->bind_param("is", $cantidad, $nombre_insumo);
+                        $stmt_resta_stock->execute();
+                        $stmt_resta_stock->close();
+                    } else {
+                        die("Error preparando update stock: " . $conn->error);
+                    }
+                }
+            }
+        }
+        $stmt_detalle->close();
+    } else {
+        die("Error preparando select insumos: " . $conn->error);
+    }
+
+    // 4. Insertar registro en historial solo UNA vez
+    $fecha_decision = date('Y-m-d H:i:s');
+    if ($stmt_pedicion = $conn->prepare("INSERT INTO historial (id_solicitud, estado, fecha) VALUES (?, 'aceptada', ?)")) {
+        $stmt_pedicion->bind_param("is", $id, $fecha_decision);
+        $stmt_pedicion->execute();
+        $stmt_pedicion->close();
+    } else {
+        die("Error preparando insert historial: " . $conn->error);
+    }
+
+    // 5. Redirigir para evitar reenvío de formulario
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
+    $id = $_POST["id"];
+
+    if ($stmt = $conn->prepare("UPDATE cirugias SET estado = 'rechazada' WHERE id = ?")) { 
+        $stmt->bind_param("i", $id);
+        if ($stmt->execute()) {
+            $fecha_decision = date('Y-m-d H:i:s'); 
+            $stmt_pedicion = $conn->prepare("INSERT INTO historial (id_solicitud, estado, fecha) VALUES (?, 'rechazada', ?)");
+            $stmt_pedicion->bind_param("is", $id, $fecha_decision);
+            $stmt_pedicion->execute();
+            
+            header("Location: ".$_SERVER['PHP_SELF']);
+            exit();
+        } else {
+            $mensaje = "<div class='msg error'><span class='icon'>&#10060;</span> Error al rechazar la solicitud: " . $stmt->error . "</div>";
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -96,8 +175,27 @@ if (isset($_GET['query'])) {
                     <th>Equipo</th>
                     <th>Paciente</th>
                     <th>Insumos</th>
+                    <th>Estado</th>
+                    <th>Resolución</th>
                 </tr>
                 <?php foreach ($personas_dentro as $cirugia): ?>
+                    <?php 
+                        $estado_class = '';
+                        switch ($cirugia['estado']) {
+                            case 'en proceso':
+                                $estado_class = 'estado-en-proceso';
+                                break;
+                            case 'terminada':
+                                $estado_class = 'estado-terminada';
+                                break;
+                            case 'aceptada':
+                                $estado_class = 'estado-aceptada';
+                                break;
+                            case 'rechazada':
+                                $estado_class = 'estado-rechazada';
+                                break;
+                        }
+                        ?>
                 <tr>
                     <td><?= htmlspecialchars($cirugia['cod_cirugia']) ?></td>
                     <td><?= htmlspecialchars($cirugia['cirugia']) ?></td>
@@ -106,6 +204,21 @@ if (isset($_GET['query'])) {
                     <td><?= htmlspecialchars($cirugia['equipo']) ?></td>
                     <td><?= htmlspecialchars($cirugia['rut_paciente']) ?></td>
                     <td><?= htmlspecialchars($cirugia['insumos']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['estado']) ?></td>
+                    <td>
+                        <?php if ($cirugia['estado'] == 'en proceso'): ?>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
+                                <input type="hidden" name="nro_serie" value="<?php echo $cirugia['id']; ?>">
+                                <button type="submit" name="aceptar" class="aceptar-btn-table">Aceptar</button>
+                            </form>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
+                                <input type="hidden" name="nro_serie" value="<?php echo $cirugia['id']; ?>">
+                                <button type="submit" name="rechazar" class="rechazar-btn-table">Rechazar</button>
+                            </form>
+                        <?php endif; ?> 
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </table>
