@@ -2,16 +2,12 @@
 session_start();
 include 'db.php';
 
-// Filtros desde GET
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
-
-// Paginación
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-// Consulta base con filtros
 $sql_base = "FROM cirugias WHERE 1";
 if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (cod_cirugia LIKE '%$nombre_usuario_filtro%' OR cirugia LIKE '%$nombre_usuario_filtro%')";
@@ -19,17 +15,13 @@ if (!empty($nombre_usuario_filtro)) {
 $sql_total = "SELECT COUNT(*) as total " . $sql_base;
 $sql_final = "SELECT * " . $sql_base . " ORDER BY id DESC LIMIT $cantidad_por_pagina OFFSET $offset";
 
-
-// Consulta total para paginación
 $total_resultado = mysqli_query($conn, $sql_total);
 $total_filas = mysqli_fetch_assoc($total_resultado)['total'];
 $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
-// Consulta final con paginación
 $resultado = mysqli_query($conn, $sql_final);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
-// Autocompletado
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
     $sql = "SELECT cod_cirugia, cirugia FROM cirugias 
@@ -47,7 +39,6 @@ if (isset($_GET['query'])) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
     $id = $_POST["id"]; 
 
-    // 1. Actualizar estado de cirugía
     if ($stmt = $conn->prepare("UPDATE cirugias SET estado = 'aceptada' WHERE id = ?")) {
         $stmt->bind_param("i", $id);
         if (!$stmt->execute()) {
@@ -57,7 +48,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
         die("Error preparando update cirugía: " . $conn->error);
     }
 
-    // 2. Obtener lista de insumos
     if ($stmt_detalle = $conn->prepare("SELECT insumos FROM cirugias WHERE id = ?")) {
         $stmt_detalle->bind_param("i", $id);
         $stmt_detalle->execute();
@@ -72,7 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
                     $nombre_insumo = trim($matches[1]);
                     $cantidad = (int)$matches[2];
 
-                    // 3. Restar stock de cada insumo
                     if ($stmt_resta_stock = $conn->prepare("UPDATE componentes SET stock = stock - ? WHERE LOWER(insumo) = LOWER(?)")) {
                         $stmt_resta_stock->bind_param("is", $cantidad, $nombre_insumo);
                         $stmt_resta_stock->execute();
@@ -88,7 +77,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
         die("Error preparando select insumos: " . $conn->error);
     }
 
-    // 4. Insertar registro en historial solo UNA vez
     $fecha_decision = date('Y-m-d H:i:s');
     if ($stmt_pedicion = $conn->prepare("INSERT INTO historial (id_solicitud, estado, fecha) VALUES (?, 'aceptada', ?)")) {
         $stmt_pedicion->bind_param("is", $id, $fecha_decision);
@@ -98,7 +86,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
         die("Error preparando insert historial: " . $conn->error);
     }
 
-    // 5. Redirigir para evitar reenvío de formulario
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
@@ -217,6 +204,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                                 <input type="hidden" name="nro_serie" value="<?php echo $cirugia['id']; ?>">
                                 <button type="submit" name="rechazar" class="rechazar-btn-table">Rechazar</button>
                             </form>
+                            <?php elseif ($cirugia['estado'] == 'en devolucion'): ?>
+                                <form method="GET" action="devolucion_insumos.php" style="display: inline;">
+                                    <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
+                                    <button type="submit" class="devolver-btn-table">Devolucion</button>
+                                </form>
                         <?php endif; ?> 
                     </td>
                 </tr>

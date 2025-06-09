@@ -87,6 +87,19 @@ input, textarea, button, select {
    font-size: 13px;
 }
 
+.devolver-btn-table {
+    background-color: #008CBA;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-left: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.devolver-btn-table:hover {
+    background-color: #007BAA;
+}
+
 button {
    background: #0056b3;
    color: white;

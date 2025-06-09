@@ -2,17 +2,13 @@
 include 'db.php';
 session_start();
 
-// Filtros desde GET
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
-
-// Consulta base con filtros
 $sql_base = "FROM componentes WHERE 1";
 
 if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
 }
 
-// Autocompletado
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
     $sql = "SELECT codigo, insumo FROM componentes 
@@ -90,7 +86,6 @@ if (isset($_POST['agregar'])) {
     header("Location: " . $_SERVER['PHP_SELF'] . "?mensaje=" . urlencode($mensaje));
     exit();
 }
-
 
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
@@ -442,10 +437,8 @@ if ($result->num_rows > 0) {
             });
         });
 </script>
-
 </body>
 </html>
-
 <?php
 $conn->close();
 ?>
