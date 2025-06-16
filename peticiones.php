@@ -145,7 +145,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                 <label for="codigo">Insumo:</label>
                 <div class="input-sugerencias-wrapper">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
-                        placeholder="Filtrar por codigo, cirugia o paciente..."
+                        placeholder="Filtrar por Paciente, codigo, cirugia..."
                         value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
@@ -166,6 +166,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                     <th>Equipo</th>
                     <th>Paciente</th>
                     <th>Insumos</th>
+                    <th>Insumos Devueltos</th>
                     <th>Estado</th>
                     <th>Fecha Solicitud</th>
                     <th>Resolución</th>
@@ -196,6 +197,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                     <td><?= htmlspecialchars($cirugia['equipo']) ?></td>
                     <td><?= htmlspecialchars($cirugia['rut_paciente']) ?></td>
                     <td><?= htmlspecialchars($cirugia['insumos']) ?></td>
+                    <td><?= htmlspecialchars($cirugia['insumos_devueltos']) ?></td>
                     <td><?= htmlspecialchars($cirugia['estado']) ?></td>
                     <td><?= htmlspecialchars($cirugia['fecha_sol']); ?></td>
                     <td>

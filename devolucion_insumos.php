@@ -11,26 +11,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $accion = $_POST['accion'];
 
     if ($accion === 'aceptar') {
-        $stmt = $conn->prepare("SELECT insumos FROM cirugias WHERE id = ?");
+        $stmt = $conn->prepare("SELECT insumos_devueltos FROM cirugias WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
         $data = $res->fetch_assoc();
 
-        $insumos_array = explode(',', $data['insumos']);
-        foreach ($insumos_array as $insumo_cantidad) {
-            if (preg_match('/^(.*?)\s*\(x(\d+)\)$/i', trim($insumo_cantidad), $matches)) {
-                $nombre_insumo = trim($matches[1]);
-                $cantidad = (int)$matches[2];
+        if (!empty($data['insumos_devueltos'])) {
+            $insumos_array = explode(',', $data['insumos_devueltos']);
+            foreach ($insumos_array as $insumo_cantidad) {
+                if (preg_match('/^(.*?)\s*\(x(\d+)\)$/i', trim($insumo_cantidad), $matches)) {
+                    $nombre_insumo = trim($matches[1]);
+                    $cantidad = (int)$matches[2];
 
-                $stmt_update = $conn->prepare("UPDATE componentes SET stock = stock + ? WHERE LOWER(insumo) = LOWER(?)");
-                $stmt_update->bind_param("is", $cantidad, $nombre_insumo);
-                $stmt_update->execute();
-                $stmt_update->close();
+                    $stmt_update = $conn->prepare("UPDATE componentes SET stock = stock + ? WHERE LOWER(insumo) = LOWER(?)");
+                    $stmt_update->bind_param("is", $cantidad, $nombre_insumo);
+                    $stmt_update->execute();
+                    $stmt_update->close();
+                }
             }
         }
 
-        $stmt = $conn->prepare("UPDATE cirugias SET estado = 'devuelta' WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE cirugias SET estado = 'terminada' WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
 
@@ -38,8 +40,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_hist = $conn->prepare("INSERT INTO historial (id_solicitud, estado, fecha) VALUES (?, 'devuelta', ?)");
         $stmt_hist->bind_param("is", $id, $fecha);
         $stmt_hist->execute();
+
     } elseif ($accion === 'rechazar') {
-        $stmt = $conn->prepare("UPDATE cirugias SET estado = 'rechazada' WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE cirugias SET estado = 'en devolucion' WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
 
@@ -59,12 +62,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <link rel="stylesheet" href="asset/styles.css">
     <meta charset="UTF-8">
-    <title>Devolución de Insumos</title>
+    <title>Administracion de insumos del Hospital Clinico Félix Bulnes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Devolución de insumos medicos</div>
+            <div class="main-title">Devoluciones de insumos medicos</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
         <button id="cuenta-btn" onclick="toggleAccountInfo()"><?php echo $_SESSION['nombre']; ?></button>
@@ -72,8 +75,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
+                <button type="button" class="volver-btn" onclick="window.location.href='peticiones.php'">Volver</button>
             </form>
-            <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>
         </div>
     </div>
 </head>
@@ -85,21 +88,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <tr>
                 <th>Código Cirugía</th>
                 <th>Cirugía</th>
-                <th>Insumos</th>
+                <th>Insumos Devueltos</th>
                 <th>Acciones</th>
             </tr>
             <?php foreach ($cirugias as $c): ?>
                 <tr>
                     <td><?= htmlspecialchars($c['cod_cirugia']) ?></td>
                     <td><?= htmlspecialchars($c['cirugia']) ?></td>
-                    <td><?= htmlspecialchars($c['insumos']) ?></td>
+                    <td><?= htmlspecialchars($c['insumos_devueltos']) ?></td>
                     <td>
-                            <form method="POST" action="terminar_cirugia.php" style="display:inline;">
+                        <form method="POST" action="" style="display:inline;">
                             <input type="hidden" name="id" value="<?= $c['id'] ?>">
                             <input type="hidden" name="accion" value="aceptar">
                             <button type="submit" class="aceptar-btn-table">Aceptar</button>
                         </form>
-                        <form method="POST" style="display:inline;">
+                        <form method="POST" action="" style="display:inline;">
                             <input type="hidden" name="id" value="<?= $c['id'] ?>">
                             <input type="hidden" name="accion" value="rechazar">
                             <button type="submit" class="rechazar-btn-table">Rechazar</button>
@@ -112,5 +115,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <p>No hay solicitudes en estado de devolución.</p>
     <?php endif; ?>
 </div>
+<script>
+        function toggleAccountInfo() {
+        const info = document.getElementById('accountInfo');
+        info.style.display = info.style.display === 'none' ? 'block' : 'none';
+    }
+</script>
 </body>
 </html>

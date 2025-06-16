@@ -143,7 +143,6 @@ if (isset($_GET['query'])) {
                             <?php endif; ?>
                         </button>
                         
-                        <!-- Panel de alertas desplegable -->
                         <div class="alert-panel" id="alertPanel">
                             <?php if (!empty($insumosBajos)): ?>
                                 <h5 style="margin-top: 0; color: #721c24;">
@@ -183,7 +182,7 @@ if (isset($_GET['query'])) {
                     <th>Formato</th>
                     <th>Stock</th>
                     <th>Ubicación</th>
-                    <th>Fecha</th>
+                    <th>Fecha de ingreso</th>
                 </tr>
                 <?php foreach ($personas_dentro as $componente): ?>
                     <tr>

@@ -195,7 +195,7 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
             </form>
-            <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>
+            <button type="button" class="volver-btn" onclick="window.location.href='bodega.php'">Volver</button>
         </div>
     </div>
 </head>
@@ -208,7 +208,6 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         <div class="card-body">
             <form method="GET" action="">
                 <div class="filter-row">
-                    <!-- Filtro por Especialidad -->
                     <div class="filter-group">
                         <label for="especialidad"><i class="fas fa-tag"></i> Especialidad:</label>
                         <select name="especialidad" id="especialidad" class="form-control">

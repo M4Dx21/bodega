@@ -2,7 +2,7 @@
 include 'db.php';
 session_start();
 
-$nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
+$nombre_usuario_filtro = isset($_GET['filtro_codigo']) ? $conn->real_escape_string($_GET['filtro_codigo']) : '';
 $sql_base = "FROM componentes WHERE 1";
 
 if (!empty($nombre_usuario_filtro)) {
@@ -247,7 +247,7 @@ if ($result->num_rows > 0) {
                 <th>Especialidad</th>
                 <th>Formato</th>
                 <th>Ubicacion</th>
-                <th>Fecha</th>
+                <th>Ingreso</th>
                 <th>Acciones</th>
                 <th>QR</th>
             </tr>
@@ -395,7 +395,7 @@ if ($result->num_rows > 0) {
     }
     
             document.addEventListener("DOMContentLoaded", function() {
-            const input = document.getElementById("codigo");
+            const input = document.getElementById("filtro_codigo");
             const sugerenciasBox = document.getElementById("sugerencias");
 
             input.addEventListener("input", function() {

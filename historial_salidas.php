@@ -31,6 +31,7 @@ $salidas = $resultado->fetch_all(MYSQLI_ASSOC);
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
             </form>
+            <button type="button" class="volver-btn" onclick="window.location.href='bodega.php'">Volver</button>
         </div>
     </div>
     <style>
