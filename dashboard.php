@@ -3,32 +3,26 @@ session_start();
 require 'db.php';
 include 'funciones.php';
 
-
-// 1. Consumo por especialidad (para gráfico circular)
-$consumo_especialidad = $conn->query("
-    SELECT c.especialidad, SUM(m.cantidad) as total 
-    FROM movimientos m
-    JOIN componentes c ON m.componente_id = c.id
-    WHERE m.tipo = 'salida' 
-    AND m.fecha >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
-    GROUP BY c.especialidad
-")->fetch_all(MYSQLI_ASSOC);
-
-// 2. Evolución de stock (para gráfico lineal)
-$historial_stock = $conn->query("
-    SELECT DATE(fecha_registro) as fecha, AVG(stock_actual) as promedio
-    FROM historico_stock
-    WHERE fecha_registro >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
-    GROUP BY DATE(fecha_registro)
-    ORDER BY fecha
-")->fetch_all(MYSQLI_ASSOC);
+$filtros = [
+    'especialidad' => $_GET['especialidad'] ?? '',
+    'fecha_inicio' => $_GET['fecha_inicio'] ?? '',
+    'fecha_fin' => $_GET['fecha_fin'] ?? ''
+];
 
 $insumosBajos = obtenerInsumosBajoStock();
+$datosPorMes = obtenerDatosAgrupadosPorMes($conn, $filtros);
+$datosHeatmap = obtenerDatosParaHeatmap($conn, $filtros);
+$datosPorMes = obtenerDatosAgrupadosPorMes($conn, $filtros);
+$topEspecialidad = obtenerTopInsumosPorEspecialidad($conn, $filtros);
+//echo '<pre>'; print_r($topEspecialidad); echo '</pre>';
 
-// Consultas para el dashboard
+
+// Consultas para el dashboard 
 $total_insumos = $conn->query("SELECT COUNT(*) FROM componentes")->fetch_row()[0];
 $stock_critico = $conn->query("SELECT COUNT(*) FROM componentes WHERE stock <= 5")->fetch_row()[0];
 $ultimas_reposiciones = $conn->query("SELECT * FROM movimientos WHERE tipo = 'entrada' ORDER BY fecha DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+
+//actualizar la tabla de ultimas reposiciones
 
 // Construye condiciones WHERE basadas en los filtros
 $whereConditions = [];
@@ -46,6 +40,8 @@ if (!empty($_GET['fecha_inicio']) && !empty($_GET['fecha_fin'])) {
     $params[] = $_GET['fecha_inicio'];
     $params[] = $_GET['fecha_fin'];
 }
+
+
 
 // Consulta modificada para el gráfico de consumo
 $sqlConsumo = "
@@ -79,7 +75,10 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - MediTrack</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
+
     <style>
                 .card { 
             border-radius: 10px; 
@@ -200,6 +199,7 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     </div>
 </head>
 <body>
+    
     <div class="container">
         <div class="card mb-4">
         <div class="card-header">
@@ -223,7 +223,6 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    
                     <!-- Filtro por Fecha -->
                     <div class="filter-group">
                         <label for="fecha_inicio"><i class="fas fa-calendar-alt"></i> Rango de Fechas:</label>
@@ -280,27 +279,48 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 </div>
             </div>
         </div>
-
-        <!-- Gráficos -->
+        <!-- <form action="actualizar_datos.php" method="POST">
+            <button type="submit"> Actualizar datos y gráficos</button>
+        </form> -->
+        <!-- Gráficos desde imágenes generadas por Python -->
         <div class="grid-2-col">
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-chart-pie"></i> Distribución por Especialidad
+                    <i class="fas fa-chart-pie"></i> Predicción Insumos
                 </div>
-                <div class="card-body">
-                    <canvas id="graficoEspecialidades"></canvas>
+                <div class="card-body text-center">
+                    <canvas id="graficoPrediccionTodos" ></canvas>
                 </div>
             </div>
-            
+
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-chart-line"></i> Evolución de Stock (3 meses)
+                    <i class="fas fa-chart-line"></i> Top insumos más solicitados
                 </div>
-                <div class="card-body">
-                    <canvas id="graficoEvolucion"></canvas>
+                <div class="card-body text-center">
+            <canvas id="graficoTopInsumosMes"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie"></i> Insumos según especialidad
+                </div>
+                <div class="card-body text-center">
+                    <canvas id="graficoTortaEspecialidad"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i> Mapa de calor
+                </div>
+                <div class="card-body text-center">
+                    <canvas id="graficoHeatmap"></canvas>
                 </div>
             </div>
         </div>
+
 
         <!-- Tabla de Insumos Críticos -->
         <div class="card">
@@ -359,47 +379,184 @@ $consumo_especialidad = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         }
     });
 
-    // Gráfico de especialidades
-    const ctxPie = document.getElementById('graficoEspecialidades').getContext('2d');
-    const pieChart = new Chart(ctxPie, {
-        type: 'pie',
+    const datos = <?= json_encode($datosPorMes) ?>;
+
+    // Agrupar por insumo (sumar cantidades de todos los meses)
+    const resumen = {};
+    datos.forEach(d => {
+        if (!resumen[d.insumo]) resumen[d.insumo] = 0;
+        resumen[d.insumo] += d.cantidad;
+    });
+
+    // Obtener los 10 más usados
+    const top10 = Object.entries(resumen)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    const etiquetas = top10.map(([nombre]) => nombre);
+    const cantidades = top10.map(([_, cantidad]) => cantidad);
+
+    new Chart(document.getElementById('graficoTopInsumosMes'), {
+        type: 'bar',
         data: {
-            labels: <?= json_encode(array_column($consumo_especialidad, 'especialidad')) ?>,
+            labels: etiquetas,
             datasets: [{
-                data: <?= json_encode(array_column($consumo_especialidad, 'total')) ?>,
-                backgroundColor: [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-                    '#FF9F40', '#8AC24A', '#7E57C2', '#EF5350', '#66BB6A'
-                ]
+                label: 'Total consumido',
+                data: cantidades,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)'
             }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '10 Insumos más usados (total)'
+                }
+            }
+        }
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+    const raw = <?= json_encode($datosHeatmap) ?>;
+
+    const insumos = [...new Set(raw.map(r => r.insumo))];
+    const meses = [...new Set(raw.map(r => r.mes))].sort();
+
+    // Crear matriz vacía
+    const matriz = insumos.map(ins => {
+        return meses.map(m => {
+            const item = raw.find(r => r.insumo === ins && r.mes === m);
+            return item ? item.cantidad : 0;
+        });
+    });
+
+    // Dataset para cada insumo
+    const datasets = insumos.map((insumo, i) => ({
+        label: insumo,
+        data: matriz[i],
+        backgroundColor: matriz[i].map(val => `rgba(${255 - val * 10},${255 - val * 5},255,0.7)`),
+        borderWidth: 1
+    }));
+
+    new Chart(document.getElementById('graficoHeatmap'), {
+        type: 'bar',
+        data: {
+            labels: meses,
+            datasets: datasets
         },
         options: {
             responsive: true,
             plugins: {
                 title: {
                     display: true,
-                    text: 'Distribución por Especialidad' +
-                        <?= !empty($_GET['especialidad']) ? "' (Filtrado: ".$_GET['especialidad'].")'" : "''" ?> +
-                        <?= !empty($_GET['fecha_inicio']) ? "' ".date('d/m/Y', strtotime($_GET['fecha_inicio']))." - ".date('d/m/Y', strtotime($_GET['fecha_fin']))."'" : "''" ?>
-                }
+                    text: 'Consumo mensual por insumo'
+                },
+                legend: { display: false }
+            },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true }
             }
         }
     });
+});
+// Usamos datos ya disponibles
+const agrupados = datos;
 
-    // Gráfico de evolución
-    const ctxLine = document.getElementById('graficoEvolucion').getContext('2d');
-    new Chart(ctxLine, {
-        type: 'line',
-        data: {
-            labels: <?= json_encode(array_column($historial_stock, 'fecha')) ?>,
-            datasets: [{
-                label: 'Stock Promedio',
-                data: <?= json_encode(array_column($historial_stock, 'promedio')) ?>,
-                borderColor: '#4e73df',
-                fill: false
-            }]
+// Agrupar por insumo
+const agrupadoPorInsumo = {};
+agrupados.forEach((d) => {
+  if (!agrupadoPorInsumo[d.insumo]) agrupadoPorInsumo[d.insumo] = [];
+  agrupadoPorInsumo[d.insumo].push(d);
+});
+
+const prediccionesFinales = [];
+
+// Recorremos cada insumo para aplicar regresión
+Object.keys(agrupadoPorInsumo).forEach((insumo) => {
+  const registros = agrupadoPorInsumo[insumo];
+  if (registros.length < 3) return; // omitir si hay pocos datos
+
+  registros.sort((a, b) => a.mes.localeCompare(b.mes));
+  const puntos = registros.map((d, i) => [i, d.cantidad]);
+
+  const resultado = regression.linear(puntos);
+  const valor = resultado.predict(registros.length)[1]; // predicción próximo mes
+  prediccionesFinales.push({ insumo, cantidad: Math.round(valor) });
+});
+
+// Ordenar por cantidad descendente
+prediccionesFinales.sort((a, b) => b.cantidad - a.cantidad);
+
+// Separar etiquetas y valores
+const etiquetasPred = prediccionesFinales.map((d) => d.insumo);
+const cantidadesPred = prediccionesFinales.map((d) => d.cantidad);
+
+// Graficar
+new Chart(document.getElementById('graficoPrediccionTodos'), {
+  type: 'bar',
+  data: {
+    labels: etiquetasPred,
+    datasets: [{
+      label: 'Cantidad estimada (próximo mes)',
+      data: cantidadesPred,
+      backgroundColor: 'rgba(0, 123, 255, 0.7)'
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      title: {
+        display: true,
+        text: 'Predicción general de insumos para el próximo mes'
+      }
+    }
+  }
+});
+
+const topEspecialidad = <?= json_encode($topEspecialidad) ?>;
+const etiquetasPie = topEspecialidad.map(e => e.especialidad);
+const valoresPie = topEspecialidad.map(e => e.cantidad);
+const detalles = topEspecialidad.map(e => e.insumo);
+
+new Chart(document.getElementById('graficoTortaEspecialidad'), {
+    type: 'pie',
+    data: {
+        labels: etiquetasPie,
+        datasets: [{
+            data: valoresPie,
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56',
+                '#4BC0C0', '#9966FF', '#FF9F40',
+                '#8AC24A', '#7E57C2', '#EF5350', '#66BB6A'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const index = context.dataIndex;
+                        return `${detalles[index]}: ${valoresPie[index]}`;
+                    }
+                }
+            },
+            title: {
+                display: true,
+                text: 'Insumo más usado por especialidad'
+            }
         }
-    });
+    }
+});
+
+
 </script>
 </body>
 </html>

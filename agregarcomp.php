@@ -145,7 +145,7 @@ if ($result->num_rows > 0) {
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Agregar insumos médicos</div>
+            <div class="main-title">Agregar insumos medicos</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
         <button id="cuenta-btn" onclick="toggleAccountInfo()"><?php echo $_SESSION['nombre']; ?></button>
@@ -246,7 +246,7 @@ if ($result->num_rows > 0) {
                 <th>Stock</th>
                 <th>Especialidad</th>
                 <th>Formato</th>
-                <th>Ubicación</th>
+                <th>Ubicacion</th>
                 <th>Ingreso</th>
                 <th>Acciones</th>
                 <th>QR</th>

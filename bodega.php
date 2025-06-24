@@ -106,7 +106,7 @@ if (isset($_GET['query'])) {
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Gestión de insumos médicos</div>
+            <div class="main-title">Gestion de insumos medicos</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
         <button id="cuenta-btn" onclick="toggleAccountInfo()"><?php echo $_SESSION['nombre']; ?></button>

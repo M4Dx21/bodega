@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Administración de insumos del Hospital Clínico Félix Bulnes</title>
+    <title>Administracion de insumos del Hospital Clinico Félix Bulnes</title>
     <link rel="stylesheet" href="asset/styles.css">
 </head>
 <body class="index-page">
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Solicitudes de Insumos Médicos</div>
+            <div class="main-title">Solicitudes de Insumos Medicos</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
     </div>

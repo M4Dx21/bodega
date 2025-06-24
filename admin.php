@@ -198,7 +198,7 @@ if ($result4->num_rows > 0) {
     <div class="container">
         <form method="POST" action="">
             <select name="rol" required id="rol" onchange="toggleCorreo()">
-                <option value="">Selecciona una opción</option>
+                <option value="">Selecciona una opcion</option>
                 <option value="bodeguero">Bodeguero</option>
                 <option value="admin">Admin</option>
                 <option value="doctor">Doctor</option>
