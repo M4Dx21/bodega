@@ -122,57 +122,59 @@ if (isset($_GET['query'])) {
 <body>
     <div class="container">
         <div class="filters">
-            <form method="GET" action="">
-                <label for="codigo">Insumo:</label>
-                <div class="input-sugerencias-wrapper">
+            <form method="GET" action="" style="display: flex; gap: 10px; align-items: center; flex-wrap: nowrap; margin: 0;">
+                <label for="codigo" style="white-space: nowrap;">Insumo:</label>
+                <div class="input-sugerencias-wrapper" style="flex-shrink: 0;">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
                         placeholder="Escribe el insumo para buscar..."
                         value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
-                <div class="botones-filtros">
-                    <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
-                    
-                    <div style="position: relative; display: inline-block;">
-                        <button type="button" class="btn-alertas" onclick="toggleAlertPanel()">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            Alertas de Stock
-                            <?php if (!empty($insumosBajos)): ?>
-                                <span class="alert-badge"><?= count($insumosBajos) ?></span>
-                            <?php endif; ?>
-                        </button>
-                        
-                        <div class="alert-panel" id="alertPanel">
-                            <?php if (!empty($insumosBajos)): ?>
-                                <h5 style="margin-top: 0; color: #721c24;">
-                                    <i class="fas fa-boxes"></i> Insumos con Stock Bajo
-                                </h5>
-                                <ul style="padding-left: 20px; margin-bottom: 0;">
-                                <?php foreach ($insumosBajos as $insumo): ?>
-                                    <li style="margin-bottom: 8px;">
-                                        <strong><?= htmlspecialchars($insumo['insumo']) ?></strong>
-                                        <div style="font-size: 0.9em;">
-                                            Stock: <?= $insumo['stock'] ?> | 
-                                            Ubicación: <?= htmlspecialchars($insumo['ubicacion']) ?>
-                                        </div>
-                                    </li>
-                                <?php endforeach; ?>
-                                </ul>
-                            <?php else: ?>
-                                <p style="margin-bottom: 0;">No hay alertas de stock</p>
-                            <?php endif; ?>
-                        </div>
+
+                <button type="submit">Filtrar</button>
+                <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+
+                <div style="position: relative; display: inline-block;">
+                    <button type="button" class="btn-alertas" onclick="toggleAlertPanel()">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Alertas de Stock
+                        <?php if (!empty($insumosBajos)): ?>
+                            <span class="alert-badge"><?= count($insumosBajos) ?></span>
+                        <?php endif; ?>
+                    </button>
+
+                    <div class="alert-panel" id="alertPanel">
+                        <?php if (!empty($insumosBajos)): ?>
+                            <h5 style="margin-top: 0; color: #721c24;">
+                                <i class="fas fa-boxes"></i> Insumos con Stock Bajo
+                            </h5>
+                            <ul style="padding-left: 20px; margin-bottom: 0;">
+                            <?php foreach ($insumosBajos as $insumo): ?>
+                                <li style="margin-bottom: 8px;">
+                                    <strong><?= htmlspecialchars($insumo['insumo']) ?></strong>
+                                    <div style="font-size: 0.9em;">
+                                        Stock: <?= $insumo['stock'] ?> | 
+                                        Ubicación: <?= htmlspecialchars($insumo['ubicacion']) ?>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p style="margin-bottom: 0;">No hay alertas de stock</p>
+                        <?php endif; ?>
                     </div>
                 </div>
-                <a href="historial_salidas.php" class="btn-dashboard">📄 Ver historial de salidas</a>
-
-                </form>
-                <button class="btn-dashboard" id="dashboardBtn"><i class="fas fa-chart-line"></i> Dashboard</button>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: nowrap; margin-top: 8px;">
+                <button class="btn-dashboard" id="dashboardBtn" type="button" style="white-space: nowrap;"
+                    onclick="window.location.href='dashboard.php'">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </button>
+                <button type="button" class="btn-dashboard" onclick="window.location.href='agregarcomp.php'">
+                    💊 Agregar Insumos
+                </button>
+            </div>
+            </form>
         </div>
-        <form action="agregarcomp.php" method="post">
-            <button type="submit">Agregar Insumos</button>
-        </form>
         <?php if (!empty($personas_dentro)): ?>
             <h2>Lista de Insumos</h2>
             <table>
