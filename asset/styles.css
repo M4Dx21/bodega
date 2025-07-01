@@ -233,11 +233,11 @@ tr:nth-child(odd) {
     padding: 8px 12px;
  }
  
- .aceptar-btn-table:hover {
+.aceptar-btn-table:hover {
     background: rgb(9, 124, 15);
  }
 
- .rechazar-btn-table {
+.rechazar-btn-table {
     background: rgb(228, 14, 14);
     color: white;
     border: none;
@@ -246,7 +246,7 @@ tr:nth-child(odd) {
     padding: 8px 12px;
  }
  
- .rechazar-btn-table:hover {
+.rechazar-btn-table:hover {
     background: rgb(131, 10, 10);
  }
 
@@ -391,7 +391,6 @@ td form {
 .filters button.limpiar-filtros-btn:hover {
    background-color: rgb(9, 124, 15);
 }
-
 
 .filters button.limpiar-filtros-btn {
    background-color: rgb(228, 14, 14);

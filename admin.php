@@ -208,7 +208,7 @@ if ($result4->num_rows > 0) {
             <input type="password" name="pass" placeholder="Contraseña" required id="pass">
 
             <input type="email" name="correo" placeholder="Correo" required id="correo">
-            <button type="submit" name="ingresar">Registrar Usuario</button>
+            <button type="submit" class="btn-dashboard" name="ingresar">Registrar Usuario</button>
         </form>
         <?php if (!empty($solicitudes_result1)): ?>
             <h3>Bodegueros:</h3>

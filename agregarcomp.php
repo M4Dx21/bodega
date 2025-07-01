@@ -181,7 +181,7 @@ if ($result->num_rows > 0) {
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
         <h2><?= $editando ? 'Editar Insumos' : 'Agregar Insumos' ?></h2>
-        <button type="button" onclick="toggleExcelForm()">📂 Importar desde Excel</button>
+        <button type="button" class="btn-dashboard" onclick="toggleExcelForm()">📂 Importar desde Excel</button>
         <div id="excelFormContainer" style="display: none; margin-top: 10px;">
             <form action="importar_excel.php" method="post" enctype="multipart/form-data">
                 <label for="archivo_excel">Subir Excel:</label>
@@ -190,7 +190,7 @@ if ($result->num_rows > 0) {
                 <button type="button" onclick="toggleExcelForm()">Cancelar</button>
             </form>
         </div>
-        <button type="button" onclick="abrirEscaner()">📷 Escanear Código</button>
+        <button type="button" class="btn-dashboard" onclick="abrirEscaner()">📷 Escanear Código</button>
         <div id="escaneo-container" style="display:none;">
             <div id="lector" style="width: 100%; max-width: 400px; margin: 10px auto;"></div>
             <button type="button" onclick="cerrarEscaner()">❌ Finalizar Escaneo</button>
@@ -234,7 +234,7 @@ if ($result->num_rows > 0) {
                 <button type="submit" name="guardar_cambios">Guardar Cambios</button>
                 <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
             <?php else: ?>
-                <button type="submit" name="agregar">Agregar Insumos</button>
+                <button type="submit" class="btn-dashboard" name="agregar">Agregar Insumos</button>
             <?php endif; ?>
         </form>
         <?php if (!empty($personas_dentro)): ?>
