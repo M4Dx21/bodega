@@ -161,8 +161,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                 <tr>
                     <th>Cirugía</th>
                     <th>Pabellón</th>
-                    <th>Cirujano</th>
-                    <th>Equipo</th>
                     <th>Paciente</th>
                     <th>Insumos</th>
                     <th>Insumos Devueltos</th>
@@ -191,8 +189,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                 <tr>
                     <td><?= htmlspecialchars($cirugia['cirugia']) ?></td>
                     <td><?= htmlspecialchars($cirugia['pabellon']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['cirujano']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['equipo']) ?></td>
                     <td><?= htmlspecialchars($cirugia['rut_paciente']) ?></td>
                     <td><?= htmlspecialchars($cirugia['insumos']) ?></td>
                     <td><?= htmlspecialchars($cirugia['insumos_devueltos']) ?></td>
@@ -214,6 +210,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                                 <form method="GET" action="devolucion_insumos.php" style="display: inline;">
                                     <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
                                     <button type="submit" class="devolver-btn-table">Devolucion</button>
+                                </form>
+                            <?php elseif ($cirugia['estado'] == 'aceptada'): ?>
+                                <form method="GET" action="imprimir.php" style="display: inline;">
+                                    <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
+                                    <button type="submit" class="aceptar-btn-table">Imprimir</button>
                                 </form>
                         <?php endif; ?> 
                     </td>
